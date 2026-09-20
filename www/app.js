@@ -692,8 +692,10 @@ document.getElementById('exportBtn').addEventListener('click', async () => {
   // Đường chính: dùng plugin Capacitor Filesystem + Share (chạy trong app Android thật)
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem) {
     try {
-      const { Filesystem, Directory } = window.Capacitor.Plugins;
-      const res = await Filesystem.writeFile({ path: filename, data: csv, directory: Directory.Cache, encoding: 'utf8' });
+      const { Filesystem } = window.Capacitor.Plugins;
+      // Lưu ý: Directory là hằng số của gói @capacitor/filesystem khi import qua bundler,
+      // không tồn tại dưới Capacitor.Plugins ở JS thuần — dùng thẳng chuỗi 'CACHE'.
+      const res = await Filesystem.writeFile({ path: filename, data: csv, directory: 'CACHE', encoding: 'utf8' });
       if (window.Capacitor.Plugins.Share) {
         await window.Capacitor.Plugins.Share.share({ title: 'Weight Tracking data', url: res.uri, dialogTitle: 'Chia sẻ file CSV' });
       } else {
@@ -942,7 +944,7 @@ document.getElementById('saveEntryBtn').addEventListener('click', () => {
   const weight = (draft.intPart||0) + (draft.decPart||0)/10;
   if (!weight || weight <= 0) { alert('Vui lòng chọn cân nặng.'); return; }
   upsertEntry({ id: draft.date, date: draft.date, weight, note: draft.note || '' });
-  resetView();
+  // Giữ nguyên zoom/pan hiện tại thay vì reset về toàn cảnh mỗi lần thêm số đo mới
   selected = entries.find(e => e.date === draft.date) || null;
   closeModal();
   showScreen('chart');
