@@ -685,19 +685,29 @@ document.getElementById('clearBtn').addEventListener('click', () => {
 
 // ---- export ----
 document.getElementById('exportBtn').addEventListener('click', async () => {
+  if (!entries.length) { alert('Chưa có dữ liệu để xuất.'); return; }
   const csv = entriesToCsv(entries);
   const filename = `w-tracker-${new Date().toISOString().slice(0,19).replace('T','_').replace(/:/g,'-')}.csv`;
+
+  // Đường chính: dùng plugin Capacitor Filesystem + Share (chạy trong app Android thật)
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem) {
     try {
       const { Filesystem, Directory } = window.Capacitor.Plugins;
       const res = await Filesystem.writeFile({ path: filename, data: csv, directory: Directory.Cache, encoding: 'utf8' });
       if (window.Capacitor.Plugins.Share) {
         await window.Capacitor.Plugins.Share.share({ title: 'Weight Tracking data', url: res.uri, dialogTitle: 'Chia sẻ file CSV' });
+      } else {
+        alert('Đã lưu file CSV vào bộ nhớ đệm của app, nhưng thiếu plugin Share để chia sẻ ra ngoài.');
       }
       return;
-    } catch (e) { console.warn('native export failed, falling back to web', e); }
+    } catch (e) {
+      alert('Xuất file lỗi: ' + (e && e.message ? e.message : e));
+      return;
+    }
   }
-  // web fallback
+
+  // Fallback: chỉ có tác dụng khi mở bằng trình duyệt thật (không phải WebView trong app),
+  // ví dụ khi test file dist/preview.html trên máy tính.
   const blob = new Blob([csv], { type: 'text/csv' });
   if (navigator.share && navigator.canShare) {
     try {
@@ -706,13 +716,17 @@ document.getElementById('exportBtn').addEventListener('click', async () => {
         await navigator.share({ files: [file], title: 'Weight Tracking data' });
         return;
       }
-    } catch (e) { /* fall through to download */ }
+    } catch (e) { /* rơi xuống cách tải file bên dưới */ }
   }
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
+  try {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert('Không thể xuất file trong môi trường này.');
+  }
 });
 
 // ---- import ----
