@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Weight Tracking</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ===================== CHART SCREEN ===================== -->
+  <div id="chartScreen" class="screen active">
+    <div class="header"><span class="icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></span><span>Weight Tracking</span></div>
+
+    <div id="bmiBar" style="display:none">
+      <span class="lbl" id="bmiLabel">BMI: --</span>
+      <div class="track"></div>
+    </div>
+
+    <div id="chartWrap">
+      <canvas id="chartCanvas"></canvas>
+      <div id="tooltip"><div class="w"></div><div class="d"></div><div class="n"></div></div>
+      <div id="emptyState"><div>Chưa có dữ liệu cân nặng.</div><div>Bấm nút + để nhập số đo đầu tiên.</div></div>
+      <button id="resetZoomBtn" title="Đưa biểu đồ về mặc định (hoặc chạm đúp)">⤾</button>
+    </div>
+  </div>
+
+  <!-- ===================== SETTINGS SCREEN ===================== -->
+  <div id="settingsScreen" class="screen">
+    <div class="header"><span class="icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></span><span>CÀI ĐẶT</span></div>
+    <div style="padding:18px 16px 0">
+      <div class="field">
+        <label>Mục tiêu cân nặng (kg)</label>
+        <input type="number" id="goalInput" step="0.1" placeholder="VD: 78.8">
+      </div>
+      <div class="field">
+        <label>Chiều cao (cm) — để tính BMI, có thể bỏ trống</label>
+        <input type="number" id="heightInput" step="0.1" placeholder="VD: 170">
+      </div>
+
+      <div class="section-title">Dữ liệu</div>
+      <button class="rowbtn" id="exportBtn"><span>Xuất file CSV</span><span class="arrow">⇢</span></button>
+      <button class="rowbtn" id="importBtn"><span>Nhập file CSV</span><span class="arrow">⇢</span></button>
+      <input type="file" id="csvFileInput" accept=".csv,text/csv,text/plain">
+      <label id="importUnitLabel" style="display:flex; align-items:center; gap:10px; padding:2px 4px 14px; font-size:13px; color:var(--text-dim);">
+        <input type="checkbox" id="importLbsToggle" checked style="width:18px; height:18px;">
+        Dữ liệu trong file CSV đang tính theo lbs (tự đổi sang kg khi nhập)
+      </label>
+
+      <div class="section-title">Khác</div>
+      <button class="rowbtn" id="clearBtn" style="color:var(--red)"><span>Xoá toàn bộ dữ liệu</span><span class="arrow">⚠</span></button>
+    </div>
+  </div>
+
+  <!-- ===================== BOTTOM NAV ===================== -->
+  <div id="bottomNav">
+    <button class="navbtn" id="navChart" title="Biểu đồ"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></button>
+    <button class="navbtn add" id="navAdd" title="Thêm cân nặng">+</button>
+    <button class="navbtn dim" id="navSettings" title="Cài đặt"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
+  </div>
+
+  <div id="credit">Created by Mondiro</div>
+</div>
+
+<!-- ===================== ADD/EDIT ENTRY MODAL ===================== -->
+<div id="entryModal">
+  <div class="modal-header"><span class="editIcon">✎</span><span>CHI TIẾT TRỌNG LƯỢNG</span></div>
+  <div id="entryPills">
+    <button class="pill-btn" id="dateBtn"><span class="ic">📅</span><span id="dateBtnLabel">Hôm nay</span></button>
+    <input type="date" id="dateSheetInput" style="position:absolute; opacity:0; width:1px; height:1px; pointer-events:none; left:-9999px;">
+    <button class="pill-btn" id="noteBtn"><span class="ic">💬</span><span id="noteBtnLabel">THÊM CHÚ THÍCH</span></button>
+  </div>
+  <div id="pickerArea">
+    <div class="wheel-center-line"></div>
+    <div class="wheel-col" id="intCol"></div>
+    <div class="dot-sep">.</div>
+    <div class="wheel-col" id="decCol"></div>
+    <div class="unit">kg</div>
+  </div>
+  <div id="modalNav">
+    <button class="roundbtn ok" id="saveEntryBtn">✓</button>
+    <button class="roundbtn cancel" id="cancelEntryBtn">↩</button>
+  </div>
+</div>
+
+<!-- note sheet -->
+<div class="overlay" id="noteOverlay">
+  <div class="sheet">
+    <h3>Chú thích</h3>
+    <textarea id="noteSheetInput" placeholder="Ghi chú (vd: ăn nhiều, đi du lịch...)"></textarea>
+    <div class="sheet-actions">
+      <button class="cancel" id="noteCancelBtn">Huỷ</button>
+      <button class="save" id="noteSaveBtn">Xong</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
