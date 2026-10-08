@@ -983,7 +983,94 @@ document.getElementById('noteSaveBtn').addEventListener('click', () => {
 });
 
 // ===================================================================
+// Tự cập nhật: mỗi lần mở app, hỏi GitHub xem có bản build mới hơn không.
+// Bản APK mới được GitHub Actions đăng lên repo public UPDATE_REPO với tag
+// "build-<số build>"; app so số build đó với versionCode đang cài.
+// ===================================================================
+const UPDATE_REPO = 'satthupc00/Weight_Tracking-releases';
+const UPDATE_SKIP_KEY = 'wt_update_skip_v1';
+const updateOverlay = document.getElementById('updateOverlay');
+const updateTitle = document.getElementById('updateTitle');
+const updateText = document.getElementById('updateText');
+const updateActions = document.getElementById('updateActions');
+const updateNowBtn = document.getElementById('updateNowBtn');
+const appVersionLabel = document.getElementById('appVersionLabel');
+let pendingUpdate = null;
+
+function appUpdater() {
+  return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AppUpdater;
+}
+
+async function fetchLatestRelease() {
+  const res = await fetch(`https://api.github.com/repos/${UPDATE_REPO}/releases/latest`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('GitHub trả về mã ' + res.status);
+  const rel = await res.json();
+  const m = /^build-(\d+)$/.exec(rel.tag_name || '');
+  const apk = (rel.assets || []).find(a => /\.apk$/i.test(a.name));
+  if (!m || !apk) return null;
+  return { build: parseInt(m[1], 10), name: rel.name || rel.tag_name, notes: (rel.body || '').trim(), url: apk.browser_download_url };
+}
+
+function showUpdateSheet(title, text, canUpdate) {
+  updateTitle.textContent = title;
+  updateText.textContent = text;
+  updateActions.style.display = '';
+  updateNowBtn.style.display = canUpdate ? '' : 'none';
+  document.getElementById('updateLaterBtn').textContent = canUpdate ? 'Để sau' : 'Đóng';
+  updateOverlay.classList.add('active');
+}
+
+async function checkForUpdate(manual) {
+  const updater = appUpdater();
+  if (!updater) {
+    if (manual) alert('Chỉ kiểm tra cập nhật được trong app Android đã cài.');
+    return;
+  }
+  try {
+    const cur = await updater.getVersion();
+    appVersionLabel.textContent = 'v' + cur.versionName;
+    const latest = await fetchLatestRelease();
+    if (!latest || latest.build <= cur.versionCode) {
+      if (manual) showUpdateSheet('Đã là bản mới nhất', `Bạn đang dùng bản ${cur.versionName}.`, false);
+      return;
+    }
+    // Đã bấm "Để sau" cho đúng bản này thì không tự hỏi lại (vẫn kiểm tra tay được).
+    if (!manual && localStorage.getItem(UPDATE_SKIP_KEY) === String(latest.build)) return;
+    pendingUpdate = latest;
+    showUpdateSheet('Có bản cập nhật mới',
+      `Bản mới: ${latest.name}\nĐang dùng: ${cur.versionName}` + (latest.notes ? `\n\n${latest.notes}` : '') +
+      '\n\nDữ liệu cân nặng vẫn được giữ nguyên.', true);
+  } catch (e) {
+    if (manual) alert('Không kiểm tra được bản mới (kiểm tra kết nối mạng).\n' + (e && e.message ? e.message : e));
+  }
+}
+
+document.getElementById('checkUpdateBtn').addEventListener('click', () => checkForUpdate(true));
+document.getElementById('updateLaterBtn').addEventListener('click', () => {
+  if (pendingUpdate) localStorage.setItem(UPDATE_SKIP_KEY, String(pendingUpdate.build));
+  pendingUpdate = null;
+  updateOverlay.classList.remove('active');
+});
+updateNowBtn.addEventListener('click', async () => {
+  const updater = appUpdater();
+  if (!updater || !pendingUpdate) return;
+  updateTitle.textContent = 'Đang tải bản cập nhật...';
+  updateText.textContent = '0%';
+  updateActions.style.display = 'none';
+  const listener = await updater.addListener('downloadProgress', p => { updateText.textContent = p.percent + '%'; });
+  try {
+    await updater.downloadAndInstall({ url: pendingUpdate.url });
+    updateOverlay.classList.remove('active');
+  } catch (e) {
+    showUpdateSheet('Cập nhật lỗi', (e && e.message ? e.message : String(e)) + '\n\nThử lại sau nhé.', true);
+  } finally {
+    listener.remove();
+  }
+});
+
+// ===================================================================
 // init
 // ===================================================================
 resizeCanvas();
 drawChart();
+checkForUpdate(false);

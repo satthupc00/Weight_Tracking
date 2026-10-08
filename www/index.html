@@ -48,6 +48,9 @@
         Dữ liệu trong file CSV đang tính theo lbs (tự đổi sang kg khi nhập)
       </label>
 
+      <div class="section-title">Cập nhật</div>
+      <button class="rowbtn" id="checkUpdateBtn"><span>Kiểm tra bản mới</span><span class="arrow" id="appVersionLabel">⇢</span></button>
+
       <div class="section-title">Khác</div>
       <button class="rowbtn" id="clearBtn" style="color:var(--red)"><span>Xoá toàn bộ dữ liệu</span><span class="arrow">⚠</span></button>
     </div>
@@ -92,6 +95,18 @@
     <div class="sheet-actions">
       <button class="cancel" id="noteCancelBtn">Huỷ</button>
       <button class="save" id="noteSaveBtn">Xong</button>
+    </div>
+  </div>
+</div>
+
+<!-- update sheet -->
+<div class="overlay" id="updateOverlay">
+  <div class="sheet">
+    <h3 id="updateTitle">Có bản cập nhật mới</h3>
+    <div id="updateText" style="font-size:14px; color:var(--text-dim); line-height:1.5; white-space:pre-line;"></div>
+    <div class="sheet-actions" id="updateActions">
+      <button class="cancel" id="updateLaterBtn">Để sau</button>
+      <button class="save" id="updateNowBtn">Cập nhật</button>
     </div>
   </div>
 </div>

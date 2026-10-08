@@ -65,3 +65,30 @@ Icon hiện tại (đường xu hướng cân nặng màu xanh ngọc + 1 chấm
 ## Ghi chú
 - Mục tiêu cân nặng và chiều cao đang để trống mặc định — vào tab Cài đặt để nhập cho đúng với bạn.
 - Xuất file sẽ dùng hộp thoại chia sẻ của Android (Share sheet) nếu cài như native app; khi mở trong trình duyệt thường (như file preview.html) sẽ tải file CSV xuống máy.
+
+## Tự cập nhật trên các máy đã cài
+Mỗi lần có thay đổi được push lên nhánh `main`, GitHub Actions tự build APK mới và đăng lên repo
+**public** `satthupc00/Weight_Tracking-releases` (chỉ chứa file APK, source + dữ liệu vẫn private).
+Mỗi khi mở app, app hỏi repo đó xem có bản mới không → hiện bảng "Có bản cập nhật mới" → bấm
+**Cập nhật** → app tự tải APK và mở màn hình cài đặt của Android → bấm **Cài đặt**. Dữ liệu giữ nguyên.
+Có thể kiểm tra tay ở **Cài đặt → Cập nhật → Kiểm tra bản mới** (hiện cả số phiên bản đang dùng).
+
+### Cài đặt 1 lần (làm trên web GitHub)
+1. Tạo repo mới: https://github.com/new → tên `Weight_Tracking-releases` → chọn **Public** →
+   tick **Add a README file** → Create repository.
+2. Tạo token: https://github.com/settings/personal-access-tokens/new → Token name `weight-releases`,
+   Expiration chọn dài nhất / No expiration → Repository access: **Only select repositories** →
+   chọn `Weight_Tracking-releases` → Permissions → Repository permissions → **Contents: Read and write**
+   → Generate token → copy chuỗi token.
+3. Vào repo `Weight_Tracking` → Settings → Secrets and variables → Actions → **New repository secret**
+   → Name: `RELEASES_TOKEN`, Secret: dán token → Add secret.
+
+Chưa có secret này thì app vẫn build bình thường, chỉ là không đăng bản cập nhật.
+
+### Lưu ý quan trọng
+- **Lần chuyển đổi đầu tiên:** các bản APK cũ được ký bằng khoá ngẫu nhiên, nên lần đầu phải
+  **xuất CSV → gỡ app cũ → cài bản mới → nhập lại CSV**. Từ bản này trở đi mọi bản đều dùng chung
+  khoá `android/app/mondiro-release.keystore` nên cập nhật đè được, không mất dữ liệu.
+- **Đừng xoá/đổi file `mondiro-release.keystore`** — mất nó thì các máy không cập nhật đè được nữa.
+- Lần đầu bấm Cập nhật, Android sẽ hỏi cho phép app "Cài ứng dụng không rõ nguồn gốc" → bật lên 1 lần.
+- Nội dung ghi chú bản cập nhật = nội dung commit message.
