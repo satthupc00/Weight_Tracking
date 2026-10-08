@@ -7,7 +7,7 @@ on:
 # Mỗi lần push lên main: build APK (số build = github.run_number) rồi đăng lên
 # repo public RELEASES_REPO. App đã cài trên các máy sẽ tự thấy bản mới khi mở.
 env:
-  RELEASES_REPO: satthupc00/Weight_Tracking-releases
+  RELEASES_REPO: satthupc00/weight_tracking_release
 
 jobs:
   build:

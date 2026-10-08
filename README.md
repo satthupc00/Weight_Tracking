@@ -68,17 +68,17 @@ Icon hiện tại (đường xu hướng cân nặng màu xanh ngọc + 1 chấm
 
 ## Tự cập nhật trên các máy đã cài
 Mỗi lần có thay đổi được push lên nhánh `main`, GitHub Actions tự build APK mới và đăng lên repo
-**public** `satthupc00/Weight_Tracking-releases` (chỉ chứa file APK, source + dữ liệu vẫn private).
+**public** `satthupc00/weight_tracking_release` (chỉ chứa file APK, source + dữ liệu vẫn private).
 Mỗi khi mở app, app hỏi repo đó xem có bản mới không → hiện bảng "Có bản cập nhật mới" → bấm
 **Cập nhật** → app tự tải APK và mở màn hình cài đặt của Android → bấm **Cài đặt**. Dữ liệu giữ nguyên.
 Có thể kiểm tra tay ở **Cài đặt → Cập nhật → Kiểm tra bản mới** (hiện cả số phiên bản đang dùng).
 
 ### Cài đặt 1 lần (làm trên web GitHub)
-1. Tạo repo mới: https://github.com/new → tên `Weight_Tracking-releases` → chọn **Public** →
+1. Tạo repo mới: https://github.com/new → tên `weight_tracking_release` → chọn **Public** →
    tick **Add a README file** → Create repository.
 2. Tạo token: https://github.com/settings/personal-access-tokens/new → Token name `weight-releases`,
    Expiration chọn dài nhất / No expiration → Repository access: **Only select repositories** →
-   chọn `Weight_Tracking-releases` → Permissions → Repository permissions → **Contents: Read and write**
+   chọn `weight_tracking_release` → Permissions → Repository permissions → **Contents: Read and write**
    → Generate token → copy chuỗi token.
 3. Vào repo `Weight_Tracking` → Settings → Secrets and variables → Actions → **New repository secret**
    → Name: `RELEASES_TOKEN`, Secret: dán token → Add secret.
