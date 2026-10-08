@@ -1,5 +1,9 @@
 apply plugin: 'com.android.application'
 
+// Số build tự tăng theo mỗi lần GitHub Actions chạy (GITHUB_RUN_NUMBER) —
+// app dùng số này để biết có bản mới hay không. Build trên máy = 1.
+def buildNumber = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()
+
 android {
     namespace "com.mondiro.weighttracking"
     compileSdk rootProject.ext.compileSdkVersion
@@ -7,10 +11,8 @@ android {
         applicationId "com.mondiro.weighttracking"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        // Số build tự tăng theo mỗi lần GitHub Actions chạy (GITHUB_RUN_NUMBER) —
-        // app dùng số này để biết có bản mới hay không. Build trên máy = 1.
-        versionCode (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()
-        versionName "1.0." + (System.getenv("GITHUB_RUN_NUMBER") ?: "1")
+        versionCode buildNumber
+        versionName "1.0.${buildNumber}"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
