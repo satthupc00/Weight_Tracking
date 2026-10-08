@@ -44,6 +44,19 @@
       <button class="rowbtn" id="importBtn"><span>Nhập file CSV</span><span class="arrow">⇢</span></button>
       <input type="file" id="csvFileInput" accept=".csv,text/csv,text/plain">
 
+      <div class="section-title">Sao lưu cloud (GitHub)</div>
+      <div class="field">
+        <label>Repo private để chứa bản sao lưu</label>
+        <input type="text" id="backupRepoInput" placeholder="satthupc00/weight_tracking_data" autocapitalize="off" autocorrect="off" spellcheck="false">
+      </div>
+      <div class="field">
+        <label>Token GitHub (chỉ lưu trên máy này)</label>
+        <input type="password" id="backupTokenInput" placeholder="github_pat_..." autocapitalize="off" autocorrect="off" spellcheck="false">
+        <div class="sub" id="backupStatus">Chưa bật sao lưu.</div>
+      </div>
+      <button class="rowbtn" id="backupNowBtn"><span>Sao lưu ngay</span><span class="arrow">⇡</span></button>
+      <button class="rowbtn" id="restoreBtn"><span>Khôi phục từ bản sao lưu</span><span class="arrow">⇣</span></button>
+
       <div class="section-title">Cập nhật</div>
       <button class="rowbtn" id="checkUpdateBtn"><span>Kiểm tra bản mới</span><span class="arrow" id="appVersionLabel">⇢</span></button>
 
