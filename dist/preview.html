@@ -651,40 +651,43 @@ function drawChart() {
   });
 
   // ---- weight value labels above each point ----
-  // Monday (red-dot) labels always show; a non-Monday label is hidden instead if it would overlap
-  // one — so pass 1 reserves+draws every Monday label first, then pass 2 fills in the rest around them.
+  // Monday (red-dot) labels always show; a non-Monday label is hidden only if its box would really
+  // overlap another label's box — checked in BOTH directions (x and y), so when the chart is zoomed
+  // vertically, labels that sit at clearly different heights all show even if they're close in time.
   ctx.font = '11px -apple-system,Roboto,Arial,sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
-  const LABEL_GAP = 4;
-  const mondayRects = [];
+  const LABEL_GAP = 3;
+  const LABEL_H = 11;
+  const labelBox = (px, py, text) => {
+    const w = ctx.measureText(text).width;
+    const base = py - 10; // text baseline sits 10px above the dot
+    return { left: px - w/2, right: px + w/2, top: base - LABEL_H, bottom: base + 2, px, base, text };
+  };
+  const hits = (a, b) => !(a.right + LABEL_GAP < b.left || a.left - LABEL_GAP > b.right ||
+                           a.bottom + LABEL_GAP < b.top || a.top - LABEL_GAP > b.bottom);
+  const placed = [];
+  const mondayBoxes = [];
   vis.forEach(e => {
     if (!isMonday(e.date)) return;
-    const px = xToPx(toDate(e.date).getTime());
     const py = yToPx(e.weight);
     if (py - 10 < PAD.t) return; // too close to the top edge
-    const text = e.weight.toFixed(1).replace('.', ',');
-    const w = ctx.measureText(text).width;
-    mondayRects.push({ left: px - w/2, right: px + w/2, px, py, text });
+    const box = labelBox(xToPx(toDate(e.date).getTime()), py, e.weight.toFixed(1).replace('.', ','));
+    mondayBoxes.push(box);
+    placed.push(box);
   });
   ctx.fillStyle = '#e6483f';
-  mondayRects.forEach(r => ctx.fillText(r.text, r.px, r.py - 10));
+  mondayBoxes.forEach(b => ctx.fillText(b.text, b.px, b.base));
 
-  let lastLabelRight = -Infinity;
+  ctx.fillStyle = '#4fd6c4';
   vis.forEach(e => {
     if (isMonday(e.date)) return; // already drawn above, with priority
-    const px = xToPx(toDate(e.date).getTime());
     const py = yToPx(e.weight);
     if (py - 10 < PAD.t) return; // too close to the top edge
-    const text = e.weight.toFixed(1).replace('.', ',');
-    const w = ctx.measureText(text).width;
-    const left = px - w/2, right = px + w/2;
-    if (left < lastLabelRight + LABEL_GAP) return; // overlaps the previous non-Monday label — skip it
-    const overlapsMonday = mondayRects.some(r => !(right + LABEL_GAP < r.left || left - LABEL_GAP > r.right));
-    if (overlapsMonday) return; // overlaps a (always-shown) Monday label — skip it
-    ctx.fillStyle = '#4fd6c4';
-    ctx.fillText(text, px, py - 10);
-    lastLabelRight = right;
+    const box = labelBox(xToPx(toDate(e.date).getTime()), py, e.weight.toFixed(1).replace('.', ','));
+    if (placed.some(b => hits(box, b))) return; // would cover another label — skip it
+    ctx.fillText(box.text, box.px, box.base);
+    placed.push(box);
   });
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
