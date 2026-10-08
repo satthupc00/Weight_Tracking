@@ -93,7 +93,7 @@ function parseCsv(text, unit) {
     let weight = parseFloat(weightStr);
     if (!date || isNaN(weight)) continue;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
-    if (unit === 'lbs') weight = weight / LBS_PER_KG;
+    if (unit === 'lbs') weight = Math.round((weight / LBS_PER_KG) * 10) / 10;
     out.push({ id: date, date, weight, note });
   }
   return out;
@@ -737,11 +737,18 @@ document.getElementById('importBtn').addEventListener('click', () => csvFileInpu
 csvFileInput.addEventListener('change', () => {
   const file = csvFileInput.files[0];
   if (!file) return;
-  const unit = document.getElementById('importLbsToggle').checked ? 'lbs' : 'kg';
   const reader = new FileReader();
   reader.onload = () => {
-    const parsed = parseCsv(String(reader.result), unit);
+    const text = String(reader.result);
+    let parsed = parseCsv(text, 'kg');
     if (parsed.length === 0) { alert('Không đọc được dữ liệu hợp lệ từ file này.'); return; }
+    // Tự nhận đơn vị: file do app này xuất ra luôn là kg. Chỉ khi số liệu lớn bất thường
+    // (trung vị > 110, vd file cũ từ app khác tính theo lbs) mới hỏi có đổi lbs → kg không.
+    const sortedW = parsed.map(e => e.weight).sort((a, b) => a - b);
+    const median = sortedW[Math.floor(sortedW.length / 2)];
+    if (median > 110 && confirm(`Số liệu trong file có vẻ đang tính theo lbs (vd: ${median}). Đổi sang kg khi nhập?`)) {
+      parsed = parseCsv(text, 'lbs');
+    }
     const byDate = new Map(entries.map(e => [e.date, e]));
     parsed.forEach(e => byDate.set(e.date, e));
     entries = Array.from(byDate.values());
