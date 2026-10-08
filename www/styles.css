@@ -76,11 +76,6 @@ html,body{
   width:100%; background:transparent; border:none; color:var(--text);
   font-size:22px; font-weight:600; outline:none;
 }
-.field input[type=text], .field input[type=password]{
-  width:100%; background:transparent; border:none; color:var(--text);
-  font-size:16px; font-weight:500; outline:none; padding:0;
-}
-.field input::placeholder{color:var(--text-dim); opacity:.6;}
 .field .sub{font-size:12px; color:var(--text-dim); margin-top:4px;}
 .rowbtn{
   display:flex; align-items:center; justify-content:space-between;
