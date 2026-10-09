@@ -245,15 +245,27 @@ function visibleEntries() {
   });
 }
 
+const NUM_FONT = '"Barlow Condensed","Roboto Condensed","Arial Narrow",sans-serif';
+const C = { grid: '#212c3b', axis: '#72859a', line: '#3cc4b2', wash: '60,196,178', mon: '#e6483f', label: '#a7b4c1',
+            labelLast: '#e9edf1', goal: '#4fd6c4', trend: '#72859a', surface: '#121a26' };
+
+// bước chia trục "đẹp" (0,1 · 0,2 · 0,25 · 0,5 · 1 · 2 · 5 ...)
+function niceStep(span, target) {
+  const raw = span / target, p = Math.pow(10, Math.floor(Math.log10(raw)));
+  for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= raw) return m * p;
+  return 10 * p;
+}
+
 function drawChart() {
   const rect = chartWrap.getBoundingClientRect();
   const W = rect.width, H = rect.height;
   ctx.clearRect(0, 0, W, H);
   ensureView();
+  refreshSideUI();
 
   const list = sortedEntries();
   emptyState.classList.toggle('hidden', list.length > 0);
-  if (list.length === 0) return;
+  if (list.length === 0) { tooltip.style.display = 'none'; return; }
 
   const vis = visibleEntries();
   const trend = computeTrend(list);
@@ -263,156 +275,157 @@ function drawChart() {
   const yToPx = (v) => H - PAD.b - (v - yMin) / (yMax - yMin) * (H - PAD.t - PAD.b);
   lastScale = { xToPx, yToPx }; // reused by tap-hit-testing so it matches exactly what was drawn
 
-  // ---- grid + y labels ----
-  ctx.strokeStyle = '#26313f';
-  ctx.fillStyle = '#7f97ab';
-  ctx.font = '11px -apple-system,Roboto,Arial,sans-serif';
+  // ---- grid + y labels (bước chia tròn số) ----
+  ctx.font = `500 14px ${NUM_FONT}`;
   ctx.textBaseline = 'middle';
-  const ySteps = 5;
-  for (let i = 0; i <= ySteps; i++) {
-    const v = yMin + (yMax - yMin) * i / ySteps;
+  ctx.textAlign = 'right';
+  const yStep = niceStep(yMax - yMin, H > 420 ? 6 : 4);
+  for (let v = Math.ceil(yMin / yStep) * yStep; v <= yMax + 1e-9; v += yStep) {
     const py = yToPx(v);
-    ctx.globalAlpha = 1;
-    ctx.beginPath(); ctx.moveTo(PAD.l, py); ctx.lineTo(W - PAD.r, py); ctx.lineWidth = 1;
-    ctx.strokeStyle = '#222d3a'; ctx.stroke();
-    ctx.fillText(v.toFixed(1), 4, py);
+    ctx.beginPath(); ctx.moveTo(PAD.l, py); ctx.lineTo(W - PAD.r, py);
+    ctx.lineWidth = 1; ctx.strokeStyle = C.grid; ctx.stroke();
+    ctx.fillStyle = C.axis;
+    ctx.fillText((yStep < 1 ? v.toFixed(yStep < 0.5 ? 2 : 1).replace(/0$/, '') : v.toFixed(0)).replace('.', ','), PAD.l - 8, py);
   }
 
-  // ---- x labels ----
+  // ---- x labels: mốc ngày tròn (thứ Hai / đầu tháng) theo độ zoom ----
   ctx.textBaseline = 'top';
   ctx.textAlign = 'center';
-  const xSteps = 4;
-  for (let i = 0; i <= xSteps; i++) {
-    const t = view.xMin + (view.xMax - view.xMin) * i / xSteps;
-    const px = xToPx(t);
-    ctx.fillStyle = '#7f97ab';
-    ctx.fillText(fmtShort(new Date(t)), px, H - PAD.b + 8);
+  const spanD = (view.xMax - view.xMin) / 86400000;
+  const xStepD = spanD <= 10 ? 1 : spanD <= 45 ? 7 : spanD <= 120 ? 14 : spanD <= 420 ? 61 : spanD <= 1100 ? 122 : 365;
+  const t0 = new Date(view.xMin); t0.setHours(0, 0, 0, 0);
+  if (xStepD === 7 || xStepD === 14) while (t0.getDay() !== 1) t0.setDate(t0.getDate() + 1);
+  if (xStepD >= 61) { t0.setDate(1); t0.setMonth(t0.getMonth() + 1); if (xStepD === 365) t0.setMonth(0); }
+  let minX = -Infinity;
+  for (let d = new Date(t0); d.getTime() <= view.xMax; ) {
+    const px = xToPx(d.getTime());
+    if (px > PAD.l + 8 && px < W - PAD.r - 8 && px > minX) {
+      const lab = xStepD === 365 ? String(d.getFullYear())
+                : xStepD >= 61 ? `T${d.getMonth() + 1}${d.getMonth() === 0 ? '/' + String(d.getFullYear()).slice(2) : ''}`
+                : `${d.getDate()}/${d.getMonth() + 1}`;
+      ctx.fillStyle = C.axis;
+      ctx.fillText(lab, px, H - PAD.b + 8);
+      minX = px + 42;
+    }
+    if (xStepD >= 61) d.setMonth(d.getMonth() + Math.round(xStepD / 30.5)); else d.setDate(d.getDate() + xStepD);
   }
-  ctx.textAlign = 'left';
 
-  // ---- goal dashed line ----
+  // plot area clip
+  ctx.save();
+  ctx.beginPath(); ctx.rect(PAD.l, 0, W - PAD.l - PAD.r, H - PAD.b); ctx.clip();
+
+  // ---- goal dashed line (xanh = mục tiêu) ----
   if (goalWeight) {
     const py = yToPx(goalWeight);
     ctx.save();
-    ctx.setLineDash([6,5]);
-    ctx.strokeStyle = '#e6483f';
-    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 5]);
+    ctx.globalAlpha = .6;
+    ctx.strokeStyle = C.goal; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(PAD.l, py); ctx.lineTo(W - PAD.r, py); ctx.stroke();
     ctx.restore();
-    ctx.fillStyle = '#e6483f';
-    ctx.font = '11px -apple-system,Roboto,Arial,sans-serif';
-    ctx.fillText(`mục tiêu: ${goalWeight.toFixed(1)} kg`, PAD.l + 6, py - 14);
+    ctx.fillStyle = C.axis;
+    ctx.font = `500 13px ${NUM_FONT}`;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText(`mục tiêu ${goalWeight.toFixed(1).replace('.', ',')}`, W - PAD.r - 4, py - 6);
+  }
+
+  // ---- area wash + solid line through actual points ----
+  const pts = vis.map(e => [xToPx(toDate(e.date).getTime()), yToPx(e.weight)]);
+  if (pts.length) {
+    const grad = ctx.createLinearGradient(0, PAD.t, 0, H - PAD.b);
+    grad.addColorStop(0, `rgba(${C.wash},.16)`); grad.addColorStop(1, `rgba(${C.wash},0)`);
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], H - PAD.b);
+    pts.forEach(p => ctx.lineTo(p[0], p[1]));
+    ctx.lineTo(pts[pts.length - 1][0], H - PAD.b);
+    ctx.closePath();
+    ctx.fillStyle = grad; ctx.fill();
+
+    ctx.beginPath();
+    pts.forEach((p, i) => (i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1])));
+    ctx.strokeStyle = C.line; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.stroke();
   }
 
   // ---- prediction dashed line (capped to PROJECTION_DAYS ahead, independent of zoom) ----
   if (trend) {
     const proj = projectedTrendPoint(trend);
-    const startPx = xToPx(proj.lastT);
-    const startPy = yToPx(proj.startW);
-    const endPx = xToPx(proj.endT);
-    const endPy = yToPx(proj.endW);
+    const startPx = xToPx(proj.lastT), startPy = yToPx(proj.startW);
+    const endPx = xToPx(proj.endT), endPy = yToPx(proj.endW);
     ctx.save();
-    ctx.setLineDash([4,4]);
-    ctx.strokeStyle = '#4fd6c4';
-    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 4]);
+    ctx.strokeStyle = C.trend; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(startPx, startPy); ctx.lineTo(endPx, endPy); ctx.stroke();
     ctx.restore();
     const perWeek = trend.slopePerDay * 7;
-    ctx.fillStyle = '#4fd6c4';
-    ctx.font = '11px -apple-system,Roboto,Arial,sans-serif';
-    const label = `${perWeek >= 0 ? '+' : ''}${perWeek.toFixed(1)} kg/tuần`;
+    ctx.fillStyle = C.axis;
+    ctx.font = `500 13px ${NUM_FONT}`;
+    ctx.textBaseline = 'alphabetic';
+    const label = `${perWeek >= 0 ? '+' : '−'}${Math.abs(perWeek).toFixed(1).replace('.', ',')} kg/tuần`;
     // keep the label inside the visible chart area even if the projected endpoint is off-screen
-    const lx = Math.min(Math.max(endPx, PAD.l + 60), W - PAD.r - 4);
+    const lx = Math.min(Math.max(endPx, PAD.l + 70), W - PAD.r - 4);
     ctx.textAlign = 'right';
-    ctx.fillText(label, lx, Math.min(Math.max(endPy, PAD.t + 12), H - PAD.b - 4) - 12);
-    ctx.textAlign = 'left';
+    ctx.fillText(label, lx, Math.min(Math.max(endPy, PAD.t + 14), H - PAD.b - 4) - 10);
   }
 
-  // ---- solid line through actual points ----
-  ctx.beginPath();
-  vis.forEach((e, i) => {
-    const px = xToPx(toDate(e.date).getTime());
-    const py = yToPx(e.weight);
-    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-  });
-  ctx.strokeStyle = '#4fd6c4';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // ---- points ----
-  vis.forEach(e => {
-    const px = xToPx(toDate(e.date).getTime());
-    const py = yToPx(e.weight);
+  // ---- points: viền màu nền để chấm tách khỏi đường; ẩn khi quá dày (zoom xa) ----
+  const dense = pts.length > (W - PAD.l - PAD.r) / 7;
+  if (!dense) vis.forEach((e, i) => {
+    const mon = isMonday(e.date);
     ctx.beginPath();
-    ctx.arc(px, py, 4, 0, Math.PI*2);
-    ctx.fillStyle = isMonday(e.date) ? '#e6483f' : '#4fd6c4';
-    ctx.fill();
+    ctx.arc(pts[i][0], pts[i][1], mon ? 4.5 : 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = mon ? C.mon : C.line; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = C.surface; ctx.stroke();
   });
+  ctx.restore(); // end plot clip
 
-  // ---- weight value labels above each point ----
-  // Monday (red-dot) labels always show; a non-Monday label is hidden only if its box would really
-  // overlap another label's box — checked in BOTH directions (x and y), so when the chart is zoomed
-  // vertically, labels that sit at clearly different heights all show even if they're close in time.
-  ctx.font = '11px -apple-system,Roboto,Arial,sans-serif';
+  // ---- weight value labels above points ----
+  // Ưu tiên: lần cân mới nhất > thứ Hai > còn lại. Một số chỉ bị ẩn khi ô chữ của nó thật sự đè lên
+  // ô chữ khác theo cả chiều ngang lẫn chiều dọc. Khi zoom quá xa (dày) chỉ hiện số mới nhất + thứ Hai.
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
-  const LABEL_GAP = 3;
-  const LABEL_H = 11;
-  const labelBox = (px, py, text) => {
-    const w = ctx.measureText(text).width;
-    const base = py - 10; // text baseline sits 10px above the dot
-    return { left: px - w/2, right: px + w/2, top: base - LABEL_H, bottom: base + 2, px, base, text };
-  };
-  const hits = (a, b) => !(a.right + LABEL_GAP < b.left || a.left - LABEL_GAP > b.right ||
-                           a.bottom + LABEL_GAP < b.top || a.top - LABEL_GAP > b.bottom);
+  const LABEL_GAP = 3, LABEL_H = 13;
+  const lastIdx = vis.length - 1;
+  const lastIsLatest = vis.length && vis[lastIdx].date === list[list.length - 1].date;
+  // zoom xa (dày): chỉ số mới nhất + cao nhất + thấp nhất trong khung; bình thường: mới nhất > thứ Hai > còn lại
+  let hiIdx = 0, loIdx = 0;
+  vis.forEach((e, i) => { if (e.weight > vis[hiIdx].weight) hiIdx = i; if (e.weight < vis[loIdx].weight) loIdx = i; });
+  const rank = i => (i === lastIdx && lastIsLatest ? 2
+                   : dense ? (i === hiIdx || i === loIdx ? 1 : 0)
+                   : isMonday(vis[i].date) ? 1 : 0);
+  const order = vis.map((e, i) => i).sort((a, b) => rank(b) - rank(a) || b - a);
   const placed = [];
-  const mondayBoxes = [];
-  vis.forEach(e => {
-    if (!isMonday(e.date)) return;
-    const py = yToPx(e.weight);
-    if (py - 10 < PAD.t) return; // too close to the top edge
-    const box = labelBox(xToPx(toDate(e.date).getTime()), py, e.weight.toFixed(1).replace('.', ','));
-    mondayBoxes.push(box);
+  order.forEach(i => {
+    const [px, py] = pts[i];
+    if (px < PAD.l || px > W - PAD.r) return;
+    if (py - 10 - LABEL_H < PAD.t - 12) return; // too close to the top edge
+    const r = rank(i);
+    if (dense && r === 0) return;
+    const text = vis[i].weight.toFixed(1).replace('.', ',');
+    ctx.font = r === 2 ? `600 17px ${NUM_FONT}` : `500 15px ${NUM_FONT}`;
+    const w = ctx.measureText(text).width, base = py - 10;
+    const box = { left: px - w / 2, right: px + w / 2, top: base - LABEL_H, bottom: base + 2 };
+    if (placed.some(b => !(box.right + LABEL_GAP < b.left || box.left - LABEL_GAP > b.right ||
+                           box.bottom + LABEL_GAP < b.top || box.top - LABEL_GAP > b.bottom))) return;
     placed.push(box);
-  });
-  ctx.fillStyle = '#e6483f';
-  mondayBoxes.forEach(b => ctx.fillText(b.text, b.px, b.base));
-
-  ctx.fillStyle = '#4fd6c4';
-  vis.forEach(e => {
-    if (isMonday(e.date)) return; // already drawn above, with priority
-    const py = yToPx(e.weight);
-    if (py - 10 < PAD.t) return; // too close to the top edge
-    const box = labelBox(xToPx(toDate(e.date).getTime()), py, e.weight.toFixed(1).replace('.', ','));
-    if (placed.some(b => hits(box, b))) return; // would cover another label — skip it
-    ctx.fillText(box.text, box.px, box.base);
-    placed.push(box);
+    ctx.fillStyle = r === 2 ? C.labelLast : C.label;
+    ctx.fillText(text, px, base);
   });
   ctx.textAlign = 'left';
-  ctx.textBaseline = 'alphabetic';
 
-  // ---- selection dashed line + marker ----
+  // ---- selection: vertical rule + ringed marker ----
   if (selected) {
     const px = xToPx(toDate(selected.date).getTime());
     const py = yToPx(selected.weight);
-    ctx.save();
-    ctx.setLineDash([3,4]);
-    ctx.strokeStyle = '#e8edf2';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(px, PAD.t); ctx.lineTo(px, H - PAD.b); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(PAD.l, py); ctx.lineTo(W - PAD.r, py); ctx.stroke();
-    ctx.restore();
-    ctx.beginPath();
-    ctx.arc(px, py, 6, 0, Math.PI*2);
-    ctx.strokeStyle = '#e8edf2'; ctx.lineWidth = 2; ctx.stroke();
-
+    ctx.beginPath(); ctx.moveTo(px, PAD.t); ctx.lineTo(px, H - PAD.b);
+    ctx.strokeStyle = C.axis; ctx.lineWidth = 1; ctx.stroke();
+    ctx.beginPath(); ctx.arc(px, py, 6.5, 0, Math.PI * 2);
+    ctx.fillStyle = isMonday(selected.date) ? C.mon : C.line; ctx.fill();
+    ctx.lineWidth = 2.5; ctx.strokeStyle = C.surface; ctx.stroke();
     positionTooltip(px, py);
   } else {
     tooltip.style.display = 'none';
   }
-
-  // ---- BMI bar ----
-  updateBmi();
 
   scheduleSaveView();
 }
@@ -424,12 +437,20 @@ function scheduleSaveView() {
   viewSaveTimer = setTimeout(saveViewState, 400);
 }
 
+const WD_LONG = ['Chủ nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'];
+const WD_SHORT = ['CN','T2','T3','T4','T5','T6','T7'];
+const fmtKg = v => v.toFixed(1).replace('.', ',');
+const fmtSigned = v => (v > 0.04 ? '+' : v < -0.04 ? '−' : '±') + Math.abs(v).toFixed(1).replace('.', ',');
+const deltaCls = v => (Math.abs(v) < 0.05 ? 'flat' : v > 0 ? 'up' : 'down');
+
 function positionTooltip(px, py) {
   const bmi = heightCm ? (selected.weight / ((heightCm/100)**2)) : null;
-  tooltip.querySelector('.w').textContent = `${selected.weight.toFixed(1)} kg`;
-  tooltip.querySelector('.d').textContent = fmtLong(selected.date) + (bmi ? `  BMI: ${bmi.toFixed(1)}` : '');
+  const d = toDate(selected.date);
+  tooltip.querySelector('.w').textContent = `${fmtKg(selected.weight)} kg`;
+  tooltip.querySelector('.d').textContent = `${WD_LONG[d.getDay()]}, ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}` +
+    (bmi ? `  ·  BMI ${bmi.toFixed(1).replace('.', ',')}` : '');
   const noteEl = tooltip.querySelector('.n');
-  if (selected.note) { noteEl.textContent = selected.note; noteEl.style.display='block'; }
+  if (selected.note) { noteEl.textContent = selected.note; noteEl.style.display = 'block'; }
   else noteEl.style.display = 'none';
   tooltip.style.display = 'block';
   const rect = chartWrap.getBoundingClientRect();
@@ -441,13 +462,103 @@ function positionTooltip(px, py) {
   tooltip.style.top = top + 'px';
 }
 
-function updateBmi() {
-  const bar = document.getElementById('bmiBar');
-  if (!heightCm || entries.length === 0) { bar.style.display = 'none'; return; }
-  const latest = sortedEntries()[sortedEntries().length-1];
-  const bmi = latest.weight / ((heightCm/100)**2);
-  bar.style.display = 'flex';
-  document.getElementById('bmiLabel').textContent = `BMI: ${bmi.toFixed(1)}`;
+// ---------------------------------------------------------------
+// Thước cân (tape) + dòng thông tin nhỏ + nhật ký — vẽ lại khi dữ liệu/mục tiêu/chiều cao đổi
+// ---------------------------------------------------------------
+const tapeWrap = document.getElementById('tapeWrap');
+const tapeSvg = document.getElementById('tapeSvg');
+const tapeTag = document.getElementById('tapeTag');
+const PX_PER_KG = 120;
+let tapeRange = null;        // {min, max} kg đang vẽ trên băng
+let tapeShownKg = null;      // số kim đang chỉ
+let sideSig = null;          // chữ ký dữ liệu lần vẽ trước — tránh vẽ lại khi chỉ pan/zoom
+
+function buildTape(min, max) {
+  const W = (max - min) * PX_PER_KG;
+  let s = '';
+  for (let i = 0; i <= (max - min) * 10; i++) {
+    const x = i * PX_PER_KG / 10, major = i % 10 === 0, half = i % 5 === 0;
+    s += `<line x1="${x}" x2="${x}" y1="0" y2="${major ? 30 : half ? 21 : 13}" stroke="${major ? '#2b2a26' : '#8b8577'}" stroke-width="${major ? 2 : 1}"/>`;
+    if (major) s += `<text x="${x}" y="56" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-size="22" font-weight="600" fill="#2b2a26">${min + i/10}</text>`;
+  }
+  tapeSvg.setAttribute('width', W);
+  tapeSvg.setAttribute('viewBox', `0 0 ${W} 70`);
+  tapeSvg.innerHTML = s + '<g id="tapeMarks"></g>';
+  tapeRange = { min, max };
+}
+function tapeMark(kg, color) {
+  const x = (kg - tapeRange.min) * PX_PER_KG;
+  return `<path d="M${x-6},70 L${x+6},70 L${x},60 Z" fill="${color}"/>`;
+}
+function placeTape(kg, animate) {
+  if (!tapeRange || kg == null) return;
+  tapeSvg.style.transition = animate ? 'transform 1.1s cubic-bezier(.2,.8,.2,1)' : 'none';
+  tapeSvg.style.transform = `translateX(${tapeWrap.clientWidth/2 - (kg - tapeRange.min) * PX_PER_KG}px)`;
+  tapeShownKg = kg;
+}
+new ResizeObserver(() => placeTape(tapeShownKg, false)).observe(tapeWrap);
+
+let journalLimit = 60;
+const journalRows = document.getElementById('journalRows');
+function renderJournal(list) {
+  document.getElementById('journalCount').textContent = list.length ? `${list.length} lần cân` : '';
+  const out = [];
+  for (let i = list.length - 1; i >= Math.max(0, list.length - journalLimit); i--) {
+    const e = list[i], d = toDate(e.date);
+    const dv = i > 0 ? e.weight - list[i-1].weight : 0;
+    out.push(`<button class="entry" data-date="${e.date}">
+      <span class="day">${d.getDate()}/${d.getMonth()+1}<small class="${isMonday(e.date) ? 'mon' : ''}">${WD_SHORT[d.getDay()]}${d.getFullYear() !== new Date().getFullYear() ? ' · ' + d.getFullYear() : ''}</small></span>
+      <span class="w">${fmtKg(e.weight)} <span>kg</span></span>
+      <span class="dl ${i > 0 ? deltaCls(dv) : 'flat'}">${i > 0 ? fmtSigned(dv) : ''}</span>
+      ${e.note ? `<span class="note">${e.note.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</span>` : ''}
+    </button>`);
+  }
+  if (list.length > journalLimit) out.push(`<button class="more" id="journalMore">Xem thêm ${Math.min(100, list.length - journalLimit)} lần cân cũ hơn</button>`);
+  journalRows.innerHTML = out.join('');
+}
+journalRows.addEventListener('click', (ev) => {
+  if (ev.target.closest('#journalMore')) { journalLimit += 100; renderJournal(sortedEntries()); return; }
+  const row = ev.target.closest('.entry');
+  if (!row) return;
+  const e = entries.find(x => x.date === row.dataset.date);
+  if (e) openModal(e);
+});
+
+function refreshSideUI() {
+  const list = sortedEntries();
+  const sig = JSON.stringify([entries.length, list.length && list[list.length-1], goalWeight, heightCm, list.reduce((a, e) => a + e.weight + (e.note || '').length, 0)]);
+  if (sig === sideSig) return;
+  sideSig = sig;
+  renderJournal(list);
+  const goalLine = document.getElementById('goalLine'), bmiLine = document.getElementById('bmiLine'), weekLine = document.getElementById('weekLine');
+  goalLine.innerHTML = goalWeight ? `<i></i>Mục tiêu ${fmtKg(goalWeight)}` : '';
+  if (!list.length) { tapeTag.innerHTML = '--<small>kg</small>'; bmiLine.textContent = ''; weekLine.textContent = ''; return; }
+  const last = list[list.length - 1], lastT = toDate(last.date).getTime();
+  tapeTag.innerHTML = `${fmtKg(last.weight)}<small>kg</small>`;
+  bmiLine.textContent = heightCm ? `BMI ${(last.weight / ((heightCm/100)**2)).toFixed(1).replace('.', ',')}` : '';
+  let wk = null;
+  for (const e of list) if (toDate(e.date).getTime() <= lastT - 7*86400000) wk = e;
+  if (wk) { const dv = last.weight - wk.weight; weekLine.className = deltaCls(dv); weekLine.textContent = `${fmtSigned(dv)} kg so với tuần trước`; }
+  else weekLine.textContent = '';
+
+  // băng thước: đủ rộng để chứa mọi số cân + mục tiêu, dư 4 kg mỗi bên
+  const ws = list.map(e => e.weight).concat(goalWeight ? [goalWeight] : []);
+  const min = Math.floor(Math.min(...ws)) - 4, max = Math.ceil(Math.max(...ws)) + 4;
+  const firstTime = tapeShownKg === null;
+  if (!tapeRange || tapeRange.min !== min || tapeRange.max !== max) {
+    const keep = tapeShownKg;
+    buildTape(min, max);
+    if (keep !== null) placeTape(keep, false);
+  }
+  document.getElementById('tapeMarks').innerHTML =
+    (goalWeight ? tapeMark(goalWeight, '#1f9e8d') : '') + tapeMark(last.weight, '#e6483f');
+  if (firstTime) {
+    // lần mở app: băng trượt từ lần cân trước tới hôm nay
+    placeTape(list.length > 1 ? list[list.length - 2].weight : last.weight, false);
+    requestAnimationFrame(() => requestAnimationFrame(() => placeTape(last.weight, true)));
+  } else if (tapeShownKg !== last.weight) {
+    placeTape(last.weight, true);
+  }
 }
 
 // ---------------------------------------------------------------
@@ -466,6 +577,7 @@ const MIN_Y_SPAN = 1, MAX_Y_SPAN = 1000;
 function plotRect(rect) { return { w: rect.width - PAD.l - PAD.r, h: rect.height - PAD.t - PAD.b }; }
 
 function panBy(dxPx, dyPx, rect) {
+  clearRangeTab();
   const { w, h } = plotRect(rect);
   const dt = -dxPx * (view.xMax - view.xMin) / w;
   const dv = dyPx * (view.yMax - view.yMin) / h; // screen-down (+dyPx) = value down
@@ -474,6 +586,7 @@ function panBy(dxPx, dyPx, rect) {
 }
 
 function zoomAt(anchorPxX, anchorPxY, scaleX, scaleY, rect) {
+  clearRangeTab();
   const { w, h } = plotRect(rect);
   if (scaleX !== 1) {
     const t = view.xMin + (anchorPxX - PAD.l) / w * (view.xMax - view.xMin);
@@ -493,7 +606,9 @@ function zoomAt(anchorPxX, anchorPxY, scaleX, scaleY, rect) {
   }
 }
 
+const fromTooltip = ev => !!(ev.target && ev.target.closest && ev.target.closest('#tooltip'));
 chartWrap.addEventListener('touchstart', (ev) => {
+  if (fromTooltip(ev)) return;
   ev.preventDefault();
   const rect = chartWrap.getBoundingClientRect();
   if (ev.touches.length === 1) {
@@ -518,6 +633,7 @@ chartWrap.addEventListener('touchstart', (ev) => {
 }, { passive: false });
 
 chartWrap.addEventListener('touchmove', (ev) => {
+  if (fromTooltip(ev)) return;
   ev.preventDefault();
   if (!touchState) return;
   const rect = chartWrap.getBoundingClientRect();
@@ -568,6 +684,7 @@ chartWrap.addEventListener('touchend', (ev) => {
 let mouseDown = null;
 let pendingClick = null;
 chartWrap.addEventListener('mousedown', (ev) => {
+  if (fromTooltip(ev)) return;
   const rect = chartWrap.getBoundingClientRect();
   const isSecondClick = pendingClick && (Date.now() - pendingClick.time < DOUBLE_TAP_MS) &&
     Math.hypot(ev.clientX - pendingClick.x, ev.clientY - pendingClick.y) < DOUBLE_TAP_PX;
@@ -637,7 +754,43 @@ function handleTap(px, py) {
 }
 
 window.addEventListener('resize', resizeCanvas);
-document.getElementById('resetZoomBtn').addEventListener('click', resetToDefaultZoomView);
+new ResizeObserver(() => resizeCanvas()).observe(chartWrap); // nhật ký thu/mở → biểu đồ giãn theo
+
+// ---- nút khoảng thời gian: Tuần / Tháng / 3 tháng / Năm / Tất cả ----
+const RANGE_KEY = 'wt_range_v1';
+const rangeTabs = document.getElementById('rangeTabs');
+function clearRangeTab() {
+  rangeTabs.querySelectorAll('button.on').forEach(b => b.classList.remove('on'));
+  try { localStorage.removeItem(RANGE_KEY); } catch (e) { /* ignore */ }
+}
+function setRange(days) {
+  const list = sortedEntries();
+  if (!list.length) return;
+  const DAY = 86400000;
+  const lastT = toDate(list[list.length-1].date).getTime(), firstT = toDate(list[0].date).getTime();
+  const xMin = days ? lastT - days * DAY : firstT - 2 * DAY;
+  const xMax = lastT + (days ? Math.min(30, Math.max(1, days / 7)) : 14) * DAY;
+  const ws = list.filter(e => { const t = toDate(e.date).getTime(); return t >= xMin && t <= xMax; }).map(e => e.weight);
+  let lo = Math.min(...ws), hi = Math.max(...ws);
+  const pad = Math.max(0.4, (hi - lo) * 0.15);
+  view = { xMin, xMax, yMin: lo - pad, yMax: hi + pad + 0.2 };
+  selected = null;
+  rangeTabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.days === days));
+  try { localStorage.setItem(RANGE_KEY, String(days)); } catch (e) { /* ignore */ }
+  saveViewState();
+  drawChart();
+}
+rangeTabs.addEventListener('click', ev => {
+  const b = ev.target.closest('button');
+  if (b) setRange(+b.dataset.days);
+});
+
+document.getElementById('tooltipEditBtn').addEventListener('click', (ev) => {
+  ev.stopPropagation();
+  if (!selected) return;
+  const e = entries.find(x => x.date === selected.date);
+  if (e) openModal(e);
+});
 
 // ===================================================================
 // Screen navigation
@@ -651,8 +804,10 @@ const navAdd = document.getElementById('navAdd');
 function showScreen(name) {
   chartScreen.classList.toggle('active', name === 'chart');
   settingsScreen.classList.toggle('active', name === 'settings');
-  navChart.classList.toggle('dim', name !== 'chart');
-  navSettings.classList.toggle('dim', name !== 'settings');
+  navChart.classList.toggle('on', name === 'chart');
+  navSettings.classList.toggle('on', name === 'settings');
+  document.getElementById('topTitle').textContent = name === 'settings' ? 'Cài đặt' : 'Weight Tracking';
+  document.getElementById('todayLabel').style.visibility = name === 'chart' ? 'visible' : 'hidden';
   if (name === 'chart') { requestAnimationFrame(resizeCanvas); }
 }
 navChart.addEventListener('click', () => showScreen('chart'));
@@ -931,7 +1086,8 @@ function lastEnteredWeight() {
 
 function openModal(existing) {
   const today = toIso(new Date());
-  draft = existing ? { ...existing } : { date: today, weight: null, note: '' };
+  draft = existing ? { ...existing, origDate: existing.date } : { date: today, weight: null, note: '' };
+  document.getElementById('modalTitle').textContent = existing ? 'Sửa lần cân' : 'Cân hôm nay';
   // for a new entry, start the wheel at the most recently entered weight instead of a fixed default
   // — avoids re-scrolling from scratch every time; editing an existing entry still shows its own value
   const startWeight = draft.weight ?? lastEnteredWeight();
@@ -939,7 +1095,7 @@ function openModal(existing) {
   draft.intPart = parseInt(w, 10);
   draft.decPart = parseInt(d, 10);
   dateBtnLabel.textContent = draft.date === today ? 'Hôm nay — ' + fmtLong(draft.date) : fmtLong(draft.date);
-  noteBtnLabel.textContent = draft.note ? draft.note : 'THÊM CHÚ THÍCH';
+  noteBtnLabel.textContent = draft.note ? draft.note : 'Thêm ghi chú';
   entryModal.classList.add('active');
   requestAnimationFrame(() => {
     intCol.scrollToValue(draft.intPart);
@@ -953,6 +1109,8 @@ document.getElementById('cancelEntryBtn').addEventListener('click', closeModal);
 document.getElementById('saveEntryBtn').addEventListener('click', () => {
   const weight = (draft.intPart||0) + (draft.decPart||0)/10;
   if (!weight || weight <= 0) { alert('Vui lòng chọn cân nặng.'); return; }
+  // sửa một lần cân mà đổi sang ngày khác → bỏ bản ghi ở ngày cũ
+  if (draft.origDate && draft.origDate !== draft.date) entries = entries.filter(e => e.date !== draft.origDate);
   upsertEntry({ id: draft.date, date: draft.date, weight, note: draft.note || '' });
   // Giữ nguyên zoom/pan hiện tại thay vì reset về toàn cảnh mỗi lần thêm số đo mới
   selected = entries.find(e => e.date === draft.date) || null;
@@ -988,7 +1146,7 @@ document.getElementById('noteBtn').addEventListener('click', () => {
 document.getElementById('noteCancelBtn').addEventListener('click', () => noteOverlay.classList.remove('active'));
 document.getElementById('noteSaveBtn').addEventListener('click', () => {
   draft.note = noteSheetInput.value.trim();
-  noteBtnLabel.textContent = draft.note ? draft.note : 'THÊM CHÚ THÍCH';
+  noteBtnLabel.textContent = draft.note ? draft.note : 'Thêm ghi chú';
   noteOverlay.classList.remove('active');
 });
 
@@ -1079,8 +1237,42 @@ updateNowBtn.addEventListener('click', async () => {
 });
 
 // ===================================================================
+// Nhật ký thu/mở — nhớ riêng cho màn hình ngoài (mặc định thu) và màn hình trong (mặc định mở)
+// ===================================================================
+const journalSide = document.getElementById('journalSide');
+const journalHead = document.getElementById('journalHead');
+const wideMQ = window.matchMedia('(min-width:640px)');
+const journalKey = () => wideMQ.matches ? 'wt_journal_open_wide' : 'wt_journal_open_narrow';
+function applyJournalState() {
+  let open = wideMQ.matches;
+  try { const v = localStorage.getItem(journalKey()); if (v !== null) open = v === '1'; } catch (e) { /* ignore */ }
+  journalSide.classList.toggle('closed', !open);
+  journalHead.setAttribute('aria-expanded', String(open));
+}
+journalHead.addEventListener('click', () => {
+  const open = journalSide.classList.toggle('closed') === false;
+  journalHead.setAttribute('aria-expanded', String(open));
+  try { localStorage.setItem(journalKey(), open ? '1' : '0'); } catch (e) { /* ignore */ }
+});
+wideMQ.addEventListener('change', applyJournalState);
+applyJournalState();
+
+(function setTodayLabel() {
+  const d = new Date();
+  document.getElementById('todayLabel').textContent = `${WD_LONG[d.getDay()]}, ${d.getDate()} tháng ${d.getMonth()+1}`;
+})();
+
+// ===================================================================
 // init
 // ===================================================================
 resizeCanvas();
-drawChart();
+(function restoreRange() {
+  let saved = null;
+  try { saved = localStorage.getItem(RANGE_KEY); } catch (e) { /* ignore */ }
+  if (saved !== null) setRange(+saved);          // lần trước chọn 1 nút khoảng thời gian → giữ nút đó
+  else if (!loadViewState()) setRange(31);        // lần đầu mở app → 1 tháng gần nhất
+  else drawChart();                               // đang ở zoom/pan tự chỉnh → giữ nguyên
+})();
+// font đóng gói tải xong → vẽ lại biểu đồ cho đúng font số
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => drawChart());
 checkForUpdate(false);
