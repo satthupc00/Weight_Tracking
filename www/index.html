@@ -11,7 +11,12 @@
 <div id="app">
 
   <div class="top">
-    <svg class="appicon" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="10" fill="#22344d"/><polyline points="7,27 14,21 20,24 27,15 33,12" fill="none" stroke="#4fd6c4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="33" cy="12" r="3.6" fill="#e6483f"/></svg>
+    <svg class="appicon" viewBox="0 0 512 512" aria-hidden="true"><defs><radialGradient id="bgB" cx=".5" cy=".3" r=".85"><stop offset="0" stop-color="#1d2a3d"/><stop offset="1" stop-color="#101824"/></radialGradient></defs><rect width="512" height="512" rx="110" fill="url(#bgB)"/><g transform="translate(256 256) scale(0.92) translate(-256 -290)">
+    <path d="M44 318 A 212 212 0 0 1 468 318 L 468 370 Q 468 396 442 396 L 70 396 Q 44 396 44 370 Z" fill="#ebe5d5"/>
+    <line x1="75.8" y1="271.7" x2="132.0" y2="286.2" stroke="#2b2a26" stroke-width="11" stroke-linecap="round"/><line x1="82.0" y1="252.3" x2="111.9" y2="263.6" stroke="#8b8577" stroke-width="6" stroke-linecap="round"/><line x1="90.3" y1="233.6" x2="118.8" y2="248.1" stroke="#8b8577" stroke-width="6" stroke-linecap="round"/><line x1="100.5" y1="215.9" x2="127.3" y2="233.5" stroke="#8b8577" stroke-width="6" stroke-linecap="round"/><line x1="112.7" y1="199.4" x2="157.4" y2="236.4" stroke="#2b2a26" stroke-width="11" stroke-linecap="round"/><line x1="126.6" y1="184.4" x2="148.8" y2="207.4" stroke="#8b8577" stroke-width="6" stroke-linecap="round"/><line x1="142.0" y1="171.0" x2="161.6" y2="196.3" stroke="#8b8577" stroke-width="6" stroke-linecap="round"/><line x1="158.8" y1="159.4" x2="175.5" y2="186.7" stroke="#8b8577" stroke-width="6" stroke-linecap="round"/><line x1="176.8" y1="149.7" x2="201.5" y2="202.2" stroke="#2b2a26" stroke-width="11" stroke-linecap="round"/><line x1="195.8" y1="142.0" x2="206.1" y2="172.3" stroke="#8b8577" stroke-width="6" stroke-linecap="round"/><line x1="215.4" y1="136.5" x2="222.4" y2="167.7" stroke="#8b8577" stroke-width="6" stroke-linecap="round"/><line x1="235.6" y1="133.1" x2="239.1" y2="164.9" stroke="#8b8577" stroke-width="6" stroke-linecap="round"/><line x1="256.0" y1="132.0" x2="256.0" y2="190.0" stroke="#2b2a26" stroke-width="11" stroke-linecap="round"/><line x1="276.4" y1="133.1" x2="272.9" y2="164.9" stroke="#8b8577" stroke-width="6" stroke-linecap="round"/><line x1="296.6" y1="136.5" x2="289.6" y2="167.7" stroke="#8b8577" stroke-width="6" stroke-linecap="round"/><line x1="316.2" y1="142.0" x2="305.9" y2="172.3" stroke="#8b8577" stroke-width="6" stroke-linecap="round"/><line x1="335.2" y1="149.7" x2="310.5" y2="202.2" stroke="#2b2a26" stroke-width="11" stroke-linecap="round"/><line x1="353.2" y1="159.4" x2="336.5" y2="186.7" stroke="#8b8577" stroke-width="6" stroke-linecap="round"/><line x1="370.0" y1="171.0" x2="350.4" y2="196.3" stroke="#8b8577" stroke-width="6" stroke-linecap="round"/><line x1="385.4" y1="184.4" x2="363.2" y2="207.4" stroke="#8b8577" stroke-width="6" stroke-linecap="round"/><line x1="399.3" y1="199.4" x2="354.6" y2="236.4" stroke="#2b2a26" stroke-width="11" stroke-linecap="round"/><line x1="411.5" y1="215.9" x2="384.7" y2="233.5" stroke="#8b8577" stroke-width="6" stroke-linecap="round"/><line x1="421.7" y1="233.6" x2="393.2" y2="248.1" stroke="#8b8577" stroke-width="6" stroke-linecap="round"/><line x1="430.0" y1="252.3" x2="400.1" y2="263.6" stroke="#8b8577" stroke-width="6" stroke-linecap="round"/><line x1="436.2" y1="271.7" x2="380.0" y2="286.2" stroke="#2b2a26" stroke-width="11" stroke-linecap="round"/>
+    <path d="M121.3 142.3 l34 0 l-17 30 z" fill="#1f9e8d" transform="rotate(322.20 138.3 166.3)"/>
+    <path d="M265.2,355.5 L305.6,153.1 Q301.3,141.7 292.0,149.7 L229.9,346.4 Z" fill="#e6483f" stroke="#e6483f" stroke-width="6" stroke-linejoin="round"/>
+    <circle cx="256" cy="318" r="44" fill="#e6483f"/><circle cx="256" cy="318" r="15" fill="#ebe5d5"/></g></svg>
     <div class="name" id="topTitle">Weight Tracking</div>
     <div class="grow"></div>
     <div class="date" id="todayLabel"></div>
@@ -110,8 +115,8 @@
     <div class="unit">kg</div>
   </div>
   <div id="modalNav">
-    <button class="roundbtn ok" id="saveEntryBtn" aria-label="Lưu">✓</button>
-    <button class="roundbtn cancel" id="cancelEntryBtn" aria-label="Huỷ">↩</button>
+    <button class="roundbtn ok" id="saveEntryBtn" aria-label="Lưu"><svg width="36" height="36" viewBox="0 0 30 30"><path d="M6 15.5l6 6L24 9" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="roundbtn cancel" id="cancelEntryBtn" aria-label="Huỷ"><svg width="36" height="36" viewBox="0 0 30 30"><path d="M11 7L5 13l6 6" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 13h11a7 7 0 0 1 0 14h-3" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   </div>
 </div>
 

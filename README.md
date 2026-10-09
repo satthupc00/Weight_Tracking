@@ -50,8 +50,8 @@ không dùng React/framework, chỉ HTML/CSS/JS thuần nên dễ đọc và s�
 `npx cap sync android` để đồng bộ vào project Android trước khi build lại.
 
 ## Đổi icon app
-Icon hiện tại (đường xu hướng cân nặng màu xanh ngọc + 1 chấm đỏ, nền xanh navy) đã được tạo sẵn và
-áp vào project Android rồi — không cần làm gì thêm để build. Nếu sau này muốn đổi icon khác:
+Icon hiện tại (mặt đồng hồ cân cơ màu ngà, kim đỏ dày, vạch xanh = mục tiêu, nền xanh navy) đã được tạo sẵn và
+áp vào project Android rồi (kể cả màn chờ lúc mở app, nền navy) — không cần làm gì thêm để build. Nếu sau này muốn đổi icon khác:
 1. Sửa hoặc thay 3 file trong `icon-assets/` (`icon-full.svg` = icon đầy đủ có nền, `icon-foreground.svg`
    = chỉ hình vẽ (nền trong suốt, để trong vùng an toàn ở giữa), `icon-background.svg` = chỉ nền), hoặc
    thay thẳng bằng ảnh thiết kế riêng của bạn.
