@@ -4,16 +4,18 @@
 Capacitor (web app đóng gói native) — cùng cách làm với app "Money Tracking".
 
 ## Tính năng
-- 2 tab: **Biểu đồ** và **Cài đặt**, chuyển qua lại bằng 2 nút tròn ở thanh dưới.
-- Biểu đồ cân nặng: zoom bằng 2 ngón (pinch), pan bằng 1 ngón, không bị vỡ nét/số khi zoom.
-  - Đường chấm chấm ngang màu đỏ = mục tiêu cân nặng (nhập ở Cài đặt).
-  - Đường chấm chấm màu xanh = dự đoán xu hướng, tính bằng hồi quy tuyến tính trên 7 lần đo gần nhất.
-  - Số đo vào **thứ Hai** hiển thị chấm màu đỏ.
-  - Chạm vào biểu đồ → hiện đường kẻ đứng nét đứt + bong bóng thông tin (cân nặng, ngày, ghi chú) tại điểm gần nhất.
-- Nút **+** đỏ to ở giữa dưới màn hình để nhập cân nặng mới (ngày, ghi chú, bánh xe chọn số kg.g giống ảnh mẫu).
-- Cài đặt: nhập mục tiêu cân nặng, chiều cao (tuỳ chọn, để tính BMI), xuất/nhập file CSV.
-- Dữ liệu lưu cục bộ trên máy (localStorage), còn nguyên khi tắt/mở lại app.
-- File CSV xuất/nhập cùng định dạng với file mẫu bạn đã gửi: `"YYYY-MM-DD"	"weight"	"note"` (tab-separated).
+- **Thước cân** trên đầu (giống băng số cân cơ): kim đỏ + nhãn đỏ là cân nặng mới nhất, tam giác xanh là mục tiêu,
+  tam giác đỏ là cân nặng hiện tại. Mở app thì băng trượt từ lần cân trước tới hôm nay. Bên dưới 1 dòng nhỏ:
+  mục tiêu, BMI (nếu nhập chiều cao), tăng/giảm so với tuần trước.
+- Nút khoảng thời gian **Tuần / Tháng / 3 tháng / Năm / Tất cả**; vẫn pinch zoom, kéo, chạm đúp rồi kéo để zoom.
+- Biểu đồ: đường xanh có nền mờ, chấm **thứ Hai màu đỏ**, đường chấm xanh = mục tiêu, đường chấm xám = dự đoán xu hướng
+  (hồi quy 7 lần cân gần nhất). Số chỉ ẩn khi thật sự đè lên số khác; zoom xa chỉ hiện số mới nhất, cao nhất, thấp nhất.
+- Chạm 1 điểm → bảng info (cân nặng, ngày, BMI, ghi chú) + nút **bút chì** để sửa lần cân đó.
+- **Nhật ký**: danh sách các lần cân kèm ghi chú và mức tăng/giảm; chạm 1 dòng để sửa. Bấm tiêu đề "Nhật ký" để
+  thu/mở (có hiệu ứng); màn hình ngoài mặc định thu gọn, màn hình trong là cột bên phải.
+- Nút **+** đỏ to ở giữa để nhập cân nặng (bánh xe kg,g + ngày + ghi chú) — cùng bảng nhập với nút sửa.
+- Cài đặt: mục tiêu, chiều cao, xuất/nhập CSV, kiểm tra bản mới, xoá dữ liệu.
+- Tự cập nhật qua GitHub Releases (xem mục bên dưới). Font Barlow Condensed + Be Vietnam Pro đóng gói sẵn, chạy offline.
 - Chữ "Created by Mondiro" ở góc dưới màn hình.
 
 ## Cấu trúc project
