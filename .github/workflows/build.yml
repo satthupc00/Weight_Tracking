@@ -5,9 +5,11 @@ on:
   workflow_dispatch:
 
 # Mỗi lần push lên main: build APK (số build = github.run_number) rồi đăng lên
-# repo public RELEASES_REPO. App đã cài trên các máy sẽ tự thấy bản mới khi mở.
+# GitHub Releases của chính repo này (repo public). App đã cài sẽ tự thấy bản mới khi mở.
 env:
-  RELEASES_REPO: satthupc00/weight_tracking_release
+  # Repo phát hành CŨ — chỉ dùng tạm để các app đời cũ (đang hỏi repo này) nhận được bản chuyển tiếp.
+  # Khi mọi máy đã cập nhật: xoá repo này + xoá secret RELEASES_TOKEN là xong, bước tương ứng tự bỏ qua.
+  OLD_RELEASES_REPO: satthupc00/weight_tracking_release
 
 jobs:
   build:
@@ -76,18 +78,25 @@ jobs:
       - name: Publish update for installed apps (main only)
         if: github.ref == 'refs/heads/main'
         env:
-          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OLD_TOKEN: ${{ secrets.RELEASES_TOKEN }}
           COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "::warning::Chưa có secret RELEASES_TOKEN — bỏ qua bước đăng bản cập nhật. Xem README mục Tự cập nhật."
-            exit 0
-          fi
           BUILD=${{ github.run_number }}
           cp android/app/build/outputs/apk/debug/app-debug.apk WeightTracking.apk
           NOTES=$(printf '%s' "${COMMIT_MSG:-Bản build mới}" | head -c 1500)
           gh release create "build-$BUILD" WeightTracking.apk \
-            --repo "$RELEASES_REPO" \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
             --title "Weight Tracking 1.0.$BUILD" \
             --notes "$NOTES" \
             --latest
+          # Chuyển tiếp: đăng thêm 1 bản vào repo cũ để app đời cũ cập nhật được sang bản mới
+          if [ -n "$OLD_TOKEN" ]; then
+            GH_TOKEN="$OLD_TOKEN" gh release create "build-$BUILD" WeightTracking.apk \
+              --repo "$OLD_RELEASES_REPO" \
+              --title "Weight Tracking 1.0.$BUILD" \
+              --notes "$NOTES" \
+              --latest \
+              || echo "::warning::Không đăng được vào repo cũ $OLD_RELEASES_REPO (đã xoá?). Có thể xoá secret RELEASES_TOKEN."
+          fi
