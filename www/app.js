@@ -245,6 +245,7 @@ function visibleEntries() {
   });
 }
 
+const REDUCED_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const NUM_FONT = '"Barlow Condensed","Roboto Condensed","Arial Narrow",sans-serif';
 const C = { grid: '#212c3b', axis: '#72859a', line: '#3cc4b2', wash: '60,196,178', mon: '#e6483f', label: '#a7b4c1',
             labelLast: '#e9edf1', goal: '#4fd6c4', trend: '#72859a', surface: '#121a26' };
@@ -254,6 +255,46 @@ function niceStep(span, target) {
   const raw = span / target, p = Math.pow(10, Math.floor(Math.log10(raw)));
   for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= raw) return m * p;
   return 10 * p;
+}
+
+// dấu "!" màu vàng cạnh số của mốc có ghi chú
+const NOTE_MARK_W = 9;
+function drawNoteMark(x, base, size) {
+  ctx.save();
+  ctx.textAlign = 'left';
+  ctx.font = `700 ${size}px ${NUM_FONT}`;
+  ctx.fillStyle = '#F2B84B';
+  ctx.fillText('!', x, base);
+  ctx.restore();
+}
+
+// số của mốc đang chọn: nhún 1 cái rồi to lên (lò xo tắt dần), giữ to trong lúc đang chọn
+let selPop = { date: null, start: 0 };
+let popRaf = null;
+function drawSelectedLabel(px, py) {
+  if (selPop.date !== selected.date) selPop = { date: selected.date, start: performance.now() };
+  const t = REDUCED_MOTION ? 5 : (performance.now() - selPop.start) / 1000;
+  const decay = Math.exp(-7 * t);
+  const scale = 1.3 - 0.3 * decay * Math.cos(17 * t);           // 1 → vọt ~1.5 → về 1.3
+  const lift = -4 * (1 - decay) + 6 * decay * Math.sin(17 * t);  // nhún xuống rồi bật lên
+  const text = selected.weight.toFixed(1).replace('.', ',');
+  ctx.save();
+  ctx.translate(px, py - 12 + lift);
+  ctx.scale(scale, scale);
+  ctx.font = `700 17px ${NUM_FONT}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 4; ctx.strokeStyle = C.surface; ctx.strokeText(text, 0, 0);
+  ctx.fillStyle = C.labelLast; ctx.fillText(text, 0, 0);
+  if (selected.note) {
+    const w = ctx.measureText(text).width;
+    ctx.font = `700 17px ${NUM_FONT}`; ctx.textAlign = 'left';
+    ctx.strokeText('!', w / 2 + 2, 0);
+    ctx.fillStyle = '#F2B84B'; ctx.fillText('!', w / 2 + 2, 0);
+  }
+  ctx.restore();
+  if (t < 1 && !popRaf) popRaf = requestAnimationFrame(() => { popRaf = null; drawChart(); });
 }
 
 function drawChart() {
@@ -401,15 +442,18 @@ function drawChart() {
     if (py - 10 - LABEL_H < PAD.t - 12) return; // too close to the top edge
     const r = rank(i);
     if (dense && r === 0) return;
+    if (selected && vis[i].date === selected.date) return; // số của mốc đang chọn vẽ riêng ở dưới (có hiệu ứng)
     const text = vis[i].weight.toFixed(1).replace('.', ',');
     ctx.font = r === 2 ? `600 17px ${NUM_FONT}` : `500 15px ${NUM_FONT}`;
     const w = ctx.measureText(text).width, base = py - 10;
-    const box = { left: px - w / 2, right: px + w / 2, top: base - LABEL_H, bottom: base + 2 };
+    const noteW = vis[i].note ? NOTE_MARK_W : 0; // chỗ cho dấu "!" khi mốc có ghi chú
+    const box = { left: px - w / 2, right: px + w / 2 + noteW, top: base - LABEL_H, bottom: base + 2 };
     if (placed.some(b => !(box.right + LABEL_GAP < b.left || box.left - LABEL_GAP > b.right ||
                            box.bottom + LABEL_GAP < b.top || box.top - LABEL_GAP > b.bottom))) return;
     placed.push(box);
     ctx.fillStyle = r === 2 ? C.labelLast : C.label;
     ctx.fillText(text, px, base);
+    if (noteW) drawNoteMark(px + w / 2 + 2, base, r === 2 ? 17 : 15);
   });
   ctx.textAlign = 'left';
 
@@ -422,6 +466,7 @@ function drawChart() {
     ctx.beginPath(); ctx.arc(px, py, 6.5, 0, Math.PI * 2);
     ctx.fillStyle = isMonday(selected.date) ? C.mon : C.line; ctx.fill();
     ctx.lineWidth = 2.5; ctx.strokeStyle = C.surface; ctx.stroke();
+    drawSelectedLabel(px, py);
     positionTooltip(px, py);
   } else {
     tooltip.style.display = 'none';
@@ -455,9 +500,10 @@ function positionTooltip(px, py) {
   tooltip.style.display = 'block';
   const rect = chartWrap.getBoundingClientRect();
   const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
-  let left = px - tw/2, top = py - th - 16;
+  // chừa chỗ phía trên điểm cho con số đang "nhún" to lên
+  let left = px - tw/2, top = py - th - 44;
   left = Math.max(4, Math.min(rect.width - tw - 4, left));
-  if (top < 4) top = py + 16;
+  if (top < 4) top = py + 18;
   tooltip.style.left = left + 'px';
   tooltip.style.top = top + 'px';
 }
@@ -495,8 +541,68 @@ function placeTape(kg, animate) {
   tapeSvg.style.transition = animate ? 'transform 1.1s cubic-bezier(.2,.8,.2,1)' : 'none';
   tapeSvg.style.transform = `translateX(${tapeWrap.clientWidth/2 - (kg - tapeRange.min) * PX_PER_KG}px)`;
   tapeShownKg = kg;
+  if (animate) wakeNeedle();
 }
 new ResizeObserver(() => placeTape(tapeShownKg, false)).observe(tapeWrap);
+
+// ---- kéo thước cân bằng tay: kim đung đưa theo tốc độ kéo, buông tay thì thước lò xo về chỗ cũ ----
+const needleEl = tapeWrap.querySelector('.needle');
+let tapeHomeKg = null;               // số cân mới nhất — vị trí "nhà" của thước
+let tapeTagHome = '';                // nội dung nhãn đỏ lúc bình thường
+let tapeDrag = null;
+const needleSim = { ang: 0, vel: 0, lastX: null, raf: null, calm: 0 };
+function tapeX() { return new DOMMatrixReadOnly(getComputedStyle(tapeSvg).transform).m41; }
+function needleLoop() {
+  const x = tapeX();
+  const v = needleSim.lastX === null ? 0 : x - needleSim.lastX; // px thước chạy trong 1 khung hình
+  needleSim.lastX = x;
+  const target = Math.max(-30, Math.min(30, -v * 1.8)); // kim bị thước "kéo" lệch theo hướng chạy
+  needleSim.vel += (target - needleSim.ang) * 0.14;      // lò xo kéo kim về
+  needleSim.vel *= 0.84;                                 // giảm chấn → nảy vài cái rồi đứng
+  needleSim.ang += needleSim.vel;
+  needleEl.style.transform = `rotate(${needleSim.ang.toFixed(2)}deg)`;
+  const still = Math.abs(needleSim.ang) < 0.05 && Math.abs(needleSim.vel) < 0.05 && Math.abs(v) < 0.05;
+  needleSim.calm = still ? needleSim.calm + 1 : 0;
+  if (tapeDrag || needleSim.calm < 12) needleSim.raf = requestAnimationFrame(needleLoop);
+  else { needleSim.raf = null; needleSim.lastX = null; needleEl.style.transform = ''; }
+}
+function wakeNeedle() {
+  if (REDUCED_MOTION || needleSim.raf) return;
+  needleSim.lastX = null; needleSim.calm = 0;
+  needleSim.raf = requestAnimationFrame(needleLoop);
+}
+tapeWrap.addEventListener('pointerdown', (ev) => {
+  if (!tapeRange || tapeHomeKg === null) return;
+  tapeWrap.setPointerCapture(ev.pointerId);
+  const x0 = tapeX();
+  tapeSvg.style.transition = 'none';
+  tapeSvg.style.transform = `translateX(${x0}px)`; // đang chạy hiệu ứng thì "chụp" lại đúng chỗ đó
+  tapeDrag = { id: ev.pointerId, startX: ev.clientX, x0 };
+  tapeWrap.classList.add('dragging');
+  wakeNeedle();
+});
+tapeWrap.addEventListener('pointermove', (ev) => {
+  if (!tapeDrag || ev.pointerId !== tapeDrag.id) return;
+  const half = tapeWrap.clientWidth / 2;
+  const minX = half - (tapeRange.max - tapeRange.min) * PX_PER_KG, maxX = half;
+  const x = Math.max(minX, Math.min(maxX, tapeDrag.x0 + (ev.clientX - tapeDrag.startX)));
+  tapeSvg.style.transform = `translateX(${x}px)`;
+  const kg = tapeRange.min + (half - x) / PX_PER_KG;
+  tapeTag.innerHTML = `${fmtKg(Math.round(kg * 10) / 10)}<small>kg</small>`;
+});
+function endTapeDrag(ev) {
+  if (!tapeDrag || ev.pointerId !== tapeDrag.id) return;
+  tapeDrag = null;
+  tapeWrap.classList.remove('dragging');
+  // về chỗ cũ có nảy nhẹ (đường cong vượt quá rồi quay lại)
+  tapeSvg.style.transition = 'transform .8s cubic-bezier(.34,1.42,.64,1)';
+  tapeSvg.style.transform = `translateX(${tapeWrap.clientWidth/2 - (tapeHomeKg - tapeRange.min) * PX_PER_KG}px)`;
+  tapeShownKg = tapeHomeKg;
+  tapeTag.innerHTML = tapeTagHome;
+  wakeNeedle();
+}
+tapeWrap.addEventListener('pointerup', endTapeDrag);
+tapeWrap.addEventListener('pointercancel', endTapeDrag);
 
 let journalLimit = 60;
 const journalRows = document.getElementById('journalRows');
@@ -534,7 +640,9 @@ function refreshSideUI() {
   goalLine.innerHTML = goalWeight ? `<i></i>Mục tiêu ${fmtKg(goalWeight)}` : '';
   if (!list.length) { tapeTag.innerHTML = '--<small>kg</small>'; bmiLine.textContent = ''; weekLine.textContent = ''; return; }
   const last = list[list.length - 1], lastT = toDate(last.date).getTime();
-  tapeTag.innerHTML = `${fmtKg(last.weight)}<small>kg</small>`;
+  tapeTagHome = `${fmtKg(last.weight)}<small>kg</small>`;
+  tapeHomeKg = last.weight;
+  if (!tapeDrag) tapeTag.innerHTML = tapeTagHome;
   bmiLine.textContent = heightCm ? `BMI ${(last.weight / ((heightCm/100)**2)).toFixed(1).replace('.', ',')}` : '';
   let wk = null;
   for (const e of list) if (toDate(e.date).getTime() <= lastT - 7*86400000) wk = e;
@@ -759,11 +867,55 @@ new ResizeObserver(() => resizeCanvas()).observe(chartWrap); // nhật ký thu/m
 // ---- nút khoảng thời gian: Tuần / Tháng / 3 tháng / Năm / Tất cả ----
 const RANGE_KEY = 'wt_range_v1';
 const rangeTabs = document.getElementById('rangeTabs');
+const rangeInd = document.createElement('span');
+rangeInd.className = 'tab-ind';
+rangeTabs.appendChild(rangeInd);
+// thanh gạch dưới tab: trượt sang tab đang chọn (ẩn khi đang zoom/kéo tay)
+function moveRangeIndicator() {
+  const on = rangeTabs.querySelector('button.on');
+  if (!on) { rangeInd.style.opacity = '0'; return; }
+  rangeInd.style.opacity = '1';
+  rangeInd.style.transform = `translateX(${on.offsetLeft}px)`;
+  rangeInd.style.width = on.offsetWidth + 'px';
+}
+new ResizeObserver(moveRangeIndicator).observe(rangeTabs);
+
+// ---- chuyển khung xem có hiệu ứng: trượt + zoom mượt (zoom theo tỉ lệ để không bị "giật" khi khung chênh lệch lớn) ----
+let viewAnimId = null;
+function stopViewAnim() { if (viewAnimId) { cancelAnimationFrame(viewAnimId); viewAnimId = null; } }
+function animateView(to, dur = 520) {
+  stopViewAnim();
+  const from = { ...view };
+  if ([from.xMin, from.xMax, from.yMin, from.yMax].some(v => v === null || !isFinite(v)) || REDUCED_MOTION) {
+    view = { ...to }; saveViewState(); drawChart(); return;
+  }
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const axis = (a0, a1, b0, b1, e) => {
+    const c = lerp((a0 + a1) / 2, (b0 + b1) / 2, e);
+    const span = (a1 - a0) * Math.pow((b1 - b0) / (a1 - a0), e);
+    return [c - span / 2, c + span / 2];
+  };
+  const start = performance.now();
+  const tick = (now) => {
+    const t = Math.min(1, (now - start) / dur);
+    const e = 1 - Math.pow(1 - t, 4); // ease-out quart
+    const [xMin, xMax] = axis(from.xMin, from.xMax, to.xMin, to.xMax, e);
+    const [yMin, yMax] = axis(from.yMin, from.yMax, to.yMin, to.yMax, e);
+    view = { xMin, xMax, yMin, yMax };
+    drawChart();
+    if (t < 1) viewAnimId = requestAnimationFrame(tick);
+    else { viewAnimId = null; view = { ...to }; saveViewState(); drawChart(); }
+  };
+  viewAnimId = requestAnimationFrame(tick);
+}
+
 function clearRangeTab() {
+  stopViewAnim();
   rangeTabs.querySelectorAll('button.on').forEach(b => b.classList.remove('on'));
+  moveRangeIndicator();
   try { localStorage.removeItem(RANGE_KEY); } catch (e) { /* ignore */ }
 }
-function setRange(days) {
+function setRange(days, animate) {
   const list = sortedEntries();
   if (!list.length) return;
   const DAY = 86400000;
@@ -773,16 +925,17 @@ function setRange(days) {
   const ws = list.filter(e => { const t = toDate(e.date).getTime(); return t >= xMin && t <= xMax; }).map(e => e.weight);
   let lo = Math.min(...ws), hi = Math.max(...ws);
   const pad = Math.max(0.4, (hi - lo) * 0.15);
-  view = { xMin, xMax, yMin: lo - pad, yMax: hi + pad + 0.2 };
+  const target = { xMin, xMax, yMin: lo - pad, yMax: hi + pad + 0.2 };
   selected = null;
   rangeTabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.days === days));
+  moveRangeIndicator();
   try { localStorage.setItem(RANGE_KEY, String(days)); } catch (e) { /* ignore */ }
-  saveViewState();
-  drawChart();
+  if (animate) animateView(target);
+  else { view = target; saveViewState(); drawChart(); }
 }
 rangeTabs.addEventListener('click', ev => {
   const b = ev.target.closest('button');
-  if (b) setRange(+b.dataset.days);
+  if (b) setRange(+b.dataset.days, true);
 });
 
 document.getElementById('tooltipEditBtn').addEventListener('click', (ev) => {
@@ -934,9 +1087,9 @@ let draft = { date: null, weight: null, note: '' };
 // ---------------------------------------------------------------
 const ITEM_H = 60;
 const WHEEL_BUFFER = 12; // render this many slots above/below center so nothing pops in during a long fast fling
-const WHEEL_FRICTION_TAU = 220; // ms — higher = the fling coasts longer before settling (was 90 — too short to loop)
+const WHEEL_FRICTION_TAU = 260; // ms — higher = the fling coasts longer before settling (was 90 — too short to loop)
 const WHEEL_STOP_VELOCITY = 0.015; // index-units/ms below which momentum ends and the snap begins
-const WHEEL_SNAP_MS = 180;
+const WHEEL_SNAP_MS = 240; // thời gian tối thiểu của đoạn trượt vào số
 const WHEEL_VELOCITY_BOOST = 1.5; // amplifies the raw drag-release velocity so a fast/strong swipe can carry a full 0-9 loop
 const WHEEL_MAX_VELOCITY = 7; // index-units/ms cap after boosting
 
@@ -950,10 +1103,9 @@ function createWheel(el, min, max, loop, onChange) {
     slots.push(div);
   }
 
-  let position = 0; // continuous index position (0 == min)
-  let velocity = 0; // index-units per ms
+  let position = 0;   // vị trí liên tục (0 == min)
   let rafId = null;
-  let snapAnim = null; // {from,to,start,dur} while easing to rest
+  let glide = null;   // {from, to, start, dur} — trượt chậm dần tới đúng 1 số
   let lastEmitted = null;
 
   function valueAt(idx) {
@@ -962,23 +1114,25 @@ function createWheel(el, min, max, loop, onChange) {
     return (v < min || v > max) ? null : v;
   }
 
+  // vẽ như 1 cái trống xoay: càng xa tâm càng nghiêng, nhỏ và mờ dần — số ở giữa to và sáng, đổi liên tục không giật
+  const DIM = [74, 90, 107], LIT = [233, 237, 241];
   function render() {
     const centerIdx = Math.round(position);
     const frac = position - centerIdx;
     slots.forEach((slotEl, si) => {
-      const rel = si - WHEEL_BUFFER; // -4..4
-      const idx = centerIdx + rel;
-      const v = valueAt(idx);
-      if (v === null) { slotEl.style.opacity = '0'; return; }
-      const offset = (rel - frac) * ITEM_H;
-      const isCenter = Math.abs(offset) < ITEM_H * 0.5;
+      const rel = si - WHEEL_BUFFER;
+      const v = valueAt(centerIdx + rel);
+      const off = rel - frac;              // khoảng cách tới tâm, tính theo số ô
+      const d = Math.abs(off);
+      if (v === null || d > 3.6) { slotEl.style.opacity = '0'; return; }
+      const near = Math.max(0, 1 - d);     // 1 ở tâm → 0 khi lệch 1 ô
+      const scale = d < 1 ? 0.62 + 0.38 * near : Math.max(0.4, 0.62 - (d - 1) * 0.07);
+      const c = DIM.map((a, k) => Math.round(a + (LIT[k] - a) * near));
       slotEl.textContent = String(v);
-      slotEl.style.transform = `translateY(${offset}px)`;
-      slotEl.classList.toggle('center', isCenter);
-      // fade + shrink toward the edges of the visible window for a subtle depth cue
-      const dist = Math.min(1, Math.abs(offset) / (ITEM_H * 3));
-      slotEl.style.opacity = String(1 - dist * 0.85);
-      slotEl.style.display = '';
+      slotEl.style.transform = `translateY(${(off * ITEM_H).toFixed(2)}px) rotateX(${(-off * 17).toFixed(2)}deg) scale(${scale.toFixed(3)})`;
+      slotEl.style.opacity = String(Math.max(0, 1 - d * 0.27));
+      slotEl.style.color = `rgb(${c.join(',')})`;
+      slotEl.style.fontWeight = near > 0.5 ? '600' : '500';
     });
     const centerValue = valueAt(centerIdx);
     if (centerValue !== null && centerValue !== lastEmitted) {
@@ -987,39 +1141,24 @@ function createWheel(el, min, max, loop, onChange) {
     }
   }
 
-  function clampBounds(p) {
-    if (loop) return p;
-    return Math.max(0, Math.min(range - 1, p));
-  }
+  function clampBounds(p) { return loop ? p : Math.max(0, Math.min(range - 1, p)); }
+  function stopAnimation() { if (rafId) { cancelAnimationFrame(rafId); rafId = null; } glide = null; }
 
-  function stopAnimation() { if (rafId) { cancelAnimationFrame(rafId); rafId = null; } snapAnim = null; }
-
-  function startSnap() {
-    const target = clampBounds(Math.round(position));
-    snapAnim = { from: position, to: target, start: performance.now(), dur: WHEEL_SNAP_MS };
-    step();
-  }
-
-  function step(ts) {
-    ts = ts || performance.now();
-    if (snapAnim) {
-      const t = Math.min(1, (ts - snapAnim.start) / snapAnim.dur);
-      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
-      position = snapAnim.from + (snapAnim.to - snapAnim.from) * eased;
-      render();
-      if (t < 1) { rafId = requestAnimationFrame(step); } else { position = snapAnim.to; snapAnim = null; rafId = null; render(); }
-      return;
-    }
-    // momentum phase
-    const dt = 16.7; // fixed step keeps this stable regardless of actual frame timing
-    position += velocity * dt;
-    velocity *= Math.exp(-dt / WHEEL_FRICTION_TAU);
-    if (!loop) {
-      if (position < 0) { position = 0; velocity = 0; }
-      else if (position > range - 1) { position = range - 1; velocity = 0; }
-    }
+  function step(now) {
+    const t = Math.min(1, (now - glide.start) / glide.dur);
+    const e = 1 - Math.pow(1 - t, 3); // ease-out: chạy nhanh rồi chậm dần, dừng êm đúng số
+    position = glide.from + (glide.to - glide.from) * e;
     render();
-    if (Math.abs(velocity) < WHEEL_STOP_VELOCITY) { startSnap(); return; }
+    if (t < 1) rafId = requestAnimationFrame(step);
+    else { position = glide.to; glide = null; rafId = null; render(); }
+  }
+  // trượt tới số đích; v = tốc độ lúc buông tay (ô/ms) để đoạn trượt nối liền, không bị khựng
+  function glideTo(target, v) {
+    const dist = Math.abs(target - position);
+    let dur = Math.abs(v) > 1e-4 ? (3 * dist) / Math.abs(v) : 0; // ease-out cubic bắt đầu với tốc độ = 3·dist/dur
+    dur = Math.max(WHEEL_SNAP_MS, Math.min(1500, dur));
+    if (REDUCED_MOTION) dur = 1;
+    glide = { from: position, to: target, start: performance.now(), dur };
     rafId = requestAnimationFrame(step);
   }
 
@@ -1050,13 +1189,13 @@ function createWheel(el, min, max, loop, onChange) {
     let v = 0;
     if (samples.length >= 2) {
       const a = samples[0], b = samples[samples.length - 1];
-      const dt = b.t - a.t;
-      if (dt > 0) v = (b.p - a.p) / dt;
+      if (b.t - a.t > 0) v = (b.p - a.p) / (b.t - a.t);
     }
-    velocity = Math.max(-WHEEL_MAX_VELOCITY, Math.min(WHEEL_MAX_VELOCITY, v * WHEEL_VELOCITY_BOOST));
+    v = Math.max(-WHEEL_MAX_VELOCITY, Math.min(WHEEL_MAX_VELOCITY, v * WHEEL_VELOCITY_BOOST));
     drag = null;
-    if (Math.abs(velocity) < WHEEL_STOP_VELOCITY) startSnap();
-    else { rafId = requestAnimationFrame(step); }
+    // đoán trước chỗ bánh xe sẽ dừng theo quán tính, làm tròn về số gần nhất rồi trượt thẳng tới đó
+    const target = clampBounds(Math.round(position + v * WHEEL_FRICTION_TAU));
+    glideTo(target, target === Math.round(position + v * WHEEL_FRICTION_TAU) ? v : v * 0.5);
   }
 
   el.addEventListener('touchstart', (ev) => { ev.preventDefault(); pointerDown(ev.touches[0].clientY); }, { passive: false });
@@ -1067,7 +1206,6 @@ function createWheel(el, min, max, loop, onChange) {
   el.scrollToValue = (v) => {
     stopAnimation();
     position = clampBounds(v - min);
-    velocity = 0;
     render();
   };
   render();
@@ -1096,13 +1234,25 @@ function openModal(existing) {
   draft.decPart = parseInt(d, 10);
   dateBtnLabel.textContent = draft.date === today ? 'Hôm nay — ' + fmtLong(draft.date) : fmtLong(draft.date);
   noteBtnLabel.textContent = draft.note ? draft.note : 'Thêm ghi chú';
-  entryModal.classList.add('active');
+  // nút ✓ và ↩ tách ra 2 bên từ chỗ nút + ở giữa
+  entryModal.classList.remove('leaving', 'entering');
+  void entryModal.offsetWidth; // chạy lại hiệu ứng mỗi lần mở
+  entryModal.classList.add('active', 'entering');
   requestAnimationFrame(() => {
     intCol.scrollToValue(draft.intPart);
     decCol.scrollToValue(draft.decPart);
   });
 }
-function closeModal() { entryModal.classList.remove('active'); }
+// đóng: 2 nút gộp lại vào giữa rồi bảng mờ đi
+let modalCloseTimer = null;
+function closeModal() {
+  if (!entryModal.classList.contains('active') || entryModal.classList.contains('leaving')) return;
+  if (REDUCED_MOTION) { entryModal.classList.remove('active', 'entering'); return; }
+  entryModal.classList.remove('entering');
+  entryModal.classList.add('leaving');
+  clearTimeout(modalCloseTimer);
+  modalCloseTimer = setTimeout(() => entryModal.classList.remove('active', 'leaving'), 330);
+}
 
 navAdd.addEventListener('click', () => openModal(null));
 document.getElementById('cancelEntryBtn').addEventListener('click', closeModal);
