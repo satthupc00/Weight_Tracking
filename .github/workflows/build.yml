@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write   # để xoá file APK của các lần build cũ
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -91,6 +92,19 @@ jobs:
             --title "Weight Tracking 1.0.$BUILD" \
             --notes "$NOTES" \
             --latest
+          # Repo public: chỉ giữ bản phát hành MỚI NHẤT (app chỉ cần bản mới nhất để cập nhật),
+          # xoá các bản cũ cùng tag của chúng
+          for tag in $(gh release list --repo "${{ github.repository }}" --limit 200 --json tagName --jq '.[].tagName'); do
+            if [ "$tag" != "build-$BUILD" ]; then
+              gh release delete "$tag" --repo "${{ github.repository }}" --yes --cleanup-tag || true
+            fi
+          done
+          # Xoá file APK đính kèm (artifact) của các lần build trước, chỉ giữ của lần này
+          gh api --paginate "repos/${{ github.repository }}/actions/artifacts?per_page=100" \
+            --jq '.artifacts[] | select(.workflow_run.id != ${{ github.run_id }}) | .id' |
+          while read -r id; do
+            gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id" || true
+          done
           # Chuyển tiếp: đăng thêm 1 bản vào repo cũ để app đời cũ cập nhật được sang bản mới
           if [ -n "$OLD_TOKEN" ]; then
             GH_TOKEN="$OLD_TOKEN" gh release create "build-$BUILD" WeightTracking.apk \
