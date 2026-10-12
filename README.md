@@ -69,28 +69,20 @@ Icon hiện tại (mặt đồng hồ cân cơ màu ngà, kim đỏ dày, vạch
 - Xuất file sẽ dùng hộp thoại chia sẻ của Android (Share sheet) nếu cài như native app; khi mở trong trình duyệt thường (như file preview.html) sẽ tải file CSV xuống máy.
 
 ## Tự cập nhật trên các máy đã cài
-Mỗi lần có thay đổi được push lên nhánh `main`, GitHub Actions tự build APK mới và đăng lên repo
-**public** `satthupc00/weight_tracking_release` (chỉ chứa file APK, source + dữ liệu vẫn private).
-Mỗi khi mở app, app hỏi repo đó xem có bản mới không → hiện bảng "Có bản cập nhật mới" → bấm
-**Cập nhật** → app tự tải APK và mở màn hình cài đặt của Android → bấm **Cài đặt**. Dữ liệu giữ nguyên.
-Có thể kiểm tra tay ở **Cài đặt → Cập nhật → Kiểm tra bản mới** (hiện cả số phiên bản đang dùng).
+Repo này là **public**. Mỗi lần có thay đổi được merge vào `main`, GitHub Actions tự build APK và đăng lên
+**Releases của chính repo này** (tag `build-<số>`, file `WeightTracking.apk`) — không cần token hay repo phụ.
+Mỗi khi mở app, app hỏi Releases xem có bản mới không → hiện bảng "Có bản cập nhật mới" → bấm **Cập nhật** →
+app tự tải APK và mở màn hình cài đặt của Android → bấm **Cài đặt**. Dữ liệu giữ nguyên.
+Có thể kiểm tra tay ở **Cài đặt → Cập nhật → Kiểm tra bản mới**.
 
-### Cài đặt 1 lần (làm trên web GitHub)
-1. Tạo repo mới: https://github.com/new → tên `weight_tracking_release` → chọn **Public** →
-   tick **Add a README file** → Create repository.
-2. Tạo token: https://github.com/settings/personal-access-tokens/new → Token name `weight-releases`,
-   Expiration chọn dài nhất / No expiration → Repository access: **Only select repositories** →
-   chọn `weight_tracking_release` → Permissions → Repository permissions → **Contents: Read and write**
-   → Generate token → copy chuỗi token.
-3. Vào repo `Weight_Tracking` → Settings → Secrets and variables → Actions → **New repository secret**
-   → Name: `RELEASES_TOKEN`, Secret: dán token → Add secret.
-
-Chưa có secret này thì app vẫn build bình thường, chỉ là không đăng bản cập nhật.
+### Bỏ repo phát hành cũ `weight_tracking_release`
+Các bản app ≤ 1.0.27 vẫn hỏi repo cũ. Vì vậy bản đầu tiên sau thay đổi này được đăng vào **cả 2 nơi**.
+1. Mở app trên **từng máy** và cập nhật lên bản mới (≥ 1.0.28). Từ bản này app hỏi repo `Weight_Tracking`.
+2. Khi mọi máy đã cập nhật: xoá repo `weight_tracking_release` (Settings → Danger Zone → Delete this repository),
+   xoá secret `RELEASES_TOKEN` (Settings → Secrets and variables → Actions), xoá luôn token GitHub đã tạo cho nó.
+   Không cần sửa code: bước đăng vào repo cũ tự bỏ qua khi không còn secret.
 
 ### Lưu ý quan trọng
-- **Lần chuyển đổi đầu tiên:** các bản APK cũ được ký bằng khoá ngẫu nhiên, nên lần đầu phải
-  **xuất CSV → gỡ app cũ → cài bản mới → nhập lại CSV**. Từ bản này trở đi mọi bản đều dùng chung
-  khoá `android/app/mondiro-release.keystore` nên cập nhật đè được, không mất dữ liệu.
-- **Đừng xoá/đổi file `mondiro-release.keystore`** — mất nó thì các máy không cập nhật đè được nữa.
+- **Đừng xoá/đổi file `android/app/mondiro-release.keystore`** — mất nó thì các máy không cập nhật đè được nữa.
 - Lần đầu bấm Cập nhật, Android sẽ hỏi cho phép app "Cài ứng dụng không rõ nguồn gốc" → bật lên 1 lần.
 - Nội dung ghi chú bản cập nhật = nội dung commit message.
