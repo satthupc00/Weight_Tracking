@@ -1152,10 +1152,10 @@ document.getElementById('noteSaveBtn').addEventListener('click', () => {
 
 // ===================================================================
 // Tự cập nhật: mỗi lần mở app, hỏi GitHub xem có bản build mới hơn không.
-// Bản APK mới được GitHub Actions đăng lên repo public UPDATE_REPO với tag
+// Bản APK mới được GitHub Actions đăng lên Releases của repo public UPDATE_REPO (chính repo app) với tag
 // "build-<số build>"; app so số build đó với versionCode đang cài.
 // ===================================================================
-const UPDATE_REPO = 'satthupc00/weight_tracking_release';
+const UPDATE_REPO = 'satthupc00/Weight_Tracking';
 const UPDATE_SKIP_KEY = 'wt_update_skip_v1';
 const updateOverlay = document.getElementById('updateOverlay');
 const updateTitle = document.getElementById('updateTitle');
