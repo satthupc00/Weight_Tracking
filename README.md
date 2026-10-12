@@ -7,7 +7,13 @@ Capacitor (web app đóng gói native) — cùng cách làm với app "Money Tra
 - **Thước cân** trên đầu (giống băng số cân cơ): kim đỏ + nhãn đỏ là cân nặng mới nhất, tam giác xanh là mục tiêu,
   tam giác đỏ là cân nặng hiện tại. Mở app thì băng trượt từ lần cân trước tới hôm nay. Bên dưới 1 dòng nhỏ:
   mục tiêu, BMI (nếu nhập chiều cao), tăng/giảm so với tuần trước.
-- Nút khoảng thời gian **Tuần / Tháng / 3 tháng / Năm / Tất cả**; vẫn pinch zoom, kéo, chạm đúp rồi kéo để zoom.
+- Nút khoảng thời gian **Tuần / Tháng / 3 tháng / Năm / Tất cả** — biểu đồ trượt + zoom mượt sang khung mới, gạch dưới tab trượt theo;
+  vẫn pinch zoom, kéo, chạm đúp rồi kéo để zoom.
+- Thước cân **kéo được**: giữ và kéo trái/phải để dò số, kim đỏ đung đưa theo tốc độ kéo, dừng thì nảy nhẹ rồi đứng;
+  buông tay thì thước tự quay về số cân mới nhất.
+- Mốc có ghi chú có dấu **!** vàng cạnh số; chạm 1 mốc thì số của mốc đó nhún 1 cái rồi to lên.
+- Mọi nút có hiệu ứng lún/nảy khi bấm; bấm **+** thì nút ✓ và ↩ tách ra 2 bên, lưu/huỷ thì 2 nút gộp lại.
+- Bánh xe nhập số xoay kiểu trống 3D, vuốt mạnh thì trôi theo quán tính rồi trượt êm vào đúng số gần nhất.
 - Biểu đồ: đường xanh có nền mờ, chấm **thứ Hai màu đỏ**, đường chấm xanh = mục tiêu, đường chấm xám = dự đoán xu hướng
   (hồi quy 7 lần cân gần nhất). Số chỉ ẩn khi thật sự đè lên số khác; zoom xa chỉ hiện số mới nhất, cao nhất, thấp nhất.
 - Chạm 1 điểm → bảng info (cân nặng, ngày, BMI, ghi chú) + nút **bút chì** để sửa lần cân đó.

@@ -24,6 +24,10 @@ html,body{
   overflow:hidden; user-select:none;
 }
 button{font-family:inherit;}
+/* mọi nút: bấm thì lún xuống, thả ra thì nảy lại (lò xo) */
+button{transition:transform .32s cubic-bezier(.34,1.56,.64,1), background-color .12s ease, color .12s ease;}
+button:active{transform:scale(.92); transition-duration:.07s;}
+.entry:active, .jhead:active, .rowbtn:active, .more:active{transform:scale(.98);}
 button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
 #app{position:fixed; inset:0; display:flex; flex-direction:column;}
 
@@ -48,7 +52,12 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
   box-shadow:inset 0 10px 14px -10px rgba(0,0,0,.35), inset 0 -10px 14px -10px rgba(0,0,0,.35);
 }
 .tapewrap svg{position:absolute; left:0; top:0; height:100%; will-change:transform;}
-.needle{position:absolute; left:50%; top:0; bottom:0; width:2px; margin-left:-1px; background:var(--red);}
+.tapewrap{touch-action:none; cursor:grab;}
+.tapewrap.dragging{cursor:grabbing;}
+.needle{position:absolute; left:50%; top:0; bottom:0; width:3px; margin-left:-1.5px; background:var(--red); border-radius:0 0 2px 2px;
+        transform-origin:50% 0; will-change:transform; pointer-events:none;}
+.tag{transition:transform .22s cubic-bezier(.34,1.56,.64,1); pointer-events:none;}
+.tapewrap.dragging .tag{transform:translateX(-50%) scale(1.1);}
 .tag{
   position:absolute; left:50%; top:6px; transform:translateX(-50%);
   background:var(--red); color:#fff; font-family:var(--num); font-weight:700; font-size:22px; line-height:1;
@@ -64,7 +73,10 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
 .tabs{display:flex; gap:18px; padding:10px 18px 0; border-bottom:1px solid var(--rule); flex-shrink:0;}
 .tabs button{background:none; border:none; color:var(--text-dim); font-size:14px; padding:6px 0 9px; position:relative;}
 .tabs button.on{color:var(--text); font-weight:500;}
-.tabs button.on::after{content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:var(--teal); border-radius:2px;}
+.tabs{position:relative;}
+.tab-ind{position:absolute; left:0; bottom:-1px; height:2px; width:0; background:var(--teal); border-radius:2px; pointer-events:none;
+         transition:transform .32s var(--ease), width .32s var(--ease), opacity .2s ease;}
+.tabs button{transition:color .15s ease;}
 
 /* ---------- chart ---------- */
 #chartWrap{flex:1; min-height:0; position:relative; touch-action:none;}
@@ -166,7 +178,7 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
   display:grid; place-items:center; margin-top:-26px;
   box-shadow:0 0 0 6px var(--bg), 0 8px 20px rgba(230,72,63,.35);
 }
-#bottomNav .add:active{transform:scale(.95);}
+#bottomNav .add:active{transform:scale(.88);}
 @media (min-width:640px){
   #bottomNav .tab{flex-direction:row; gap:8px; font-size:13px;}
 }
@@ -179,7 +191,19 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
 
 /* ---------- entry modal (dùng chung: thêm mới + sửa) ---------- */
 #entryModal{position:fixed; inset:0; background:var(--bg); z-index:50; display:none; flex-direction:column;}
-#entryModal.active{display:flex;}
+#entryModal.active{display:flex; animation:modalIn .22s ease both;}
+#entryModal.leaving{animation:modalOut .2s ease .13s both; pointer-events:none;}
+@keyframes modalIn{from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:none;}}
+@keyframes modalOut{to{opacity:0; transform:translateY(10px);}}
+/* ✓ và ↩ tách ra từ giữa (nơi có nút +), lúc đóng thì gộp lại */
+#entryModal.entering .roundbtn.ok{animation:splitOk .55s cubic-bezier(.34,1.56,.64,1) backwards;}
+#entryModal.entering .roundbtn.cancel{animation:splitBack .55s cubic-bezier(.34,1.56,.64,1) .04s backwards;}
+#entryModal.leaving .roundbtn.ok{animation:mergeOk .22s cubic-bezier(.55,0,.75,.2) forwards;}
+#entryModal.leaving .roundbtn.cancel{animation:mergeBack .22s cubic-bezier(.55,0,.75,.2) forwards;}
+@keyframes splitOk{from{transform:translateX(49px) scale(.92);}}
+@keyframes splitBack{from{transform:translateX(-49px) scale(.5); opacity:0;}}
+@keyframes mergeOk{to{transform:translateX(49px) scale(.92);}}
+@keyframes mergeBack{to{transform:translateX(-49px) scale(.5); opacity:0;}}
 .modal-header{padding:18px 18px 8px; display:flex; align-items:center; gap:12px; font-size:18px; font-weight:600;}
 .modal-header .editIcon{display:grid; place-items:center; width:34px; height:34px; border-radius:10px; background:var(--slate); color:var(--teal);}
 #entryPills{padding:10px 16px 0; max-width:520px; width:100%; margin:0 auto;}
@@ -191,13 +215,12 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
 }
 .pill-btn .ic{font-size:16px;}
 #pickerArea{flex:1; display:flex; align-items:center; justify-content:center; gap:6px; position:relative; min-height:0;}
-.wheel-col{height:180px; width:90px; position:relative; overflow:hidden; touch-action:none;}
+.wheel-col{height:180px; width:90px; position:relative; overflow:hidden; touch-action:none; perspective:420px;}
 .wheel-item{
   position:absolute; left:0; right:0; top:50%; height:60px; margin-top:-30px;
-  display:flex; align-items:center; justify-content:center;
-  font-family:var(--num); font-size:32px; color:#4a5a6b; font-weight:500; will-change:transform, opacity;
+  display:flex; align-items:center; justify-content:center; backface-visibility:hidden;
+  font-family:var(--num); font-size:52px; color:#4a5a6b; font-weight:500; will-change:transform, opacity;
 }
-.wheel-item.center{color:var(--text); font-size:52px; font-weight:600;}
 .wheel-center-line{
   position:absolute; left:50%; width:300px; margin-left:-150px; top:50%; height:60px; transform:translateY(-30px);
   border-top:1px solid #33435a; border-bottom:1px solid #33435a; pointer-events:none;
@@ -228,5 +251,6 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
 .sheet-actions .save{background:var(--teal); color:#0b2a26;}
 
 @media (prefers-reduced-motion: reduce){
-  .side, .jhead .chev, .rows, .tapewrap svg{transition:none !important;}
+  .side, .jhead .chev, .rows, .tapewrap svg, button, .tab-ind, .tag{transition:none !important;}
+  #entryModal, #entryModal .roundbtn{animation:none !important;}
 }
