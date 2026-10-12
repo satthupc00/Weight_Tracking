@@ -74,6 +74,7 @@ Repo này là **public**. Mỗi lần có thay đổi được merge vào `main`
 Mỗi khi mở app, app hỏi Releases xem có bản mới không → hiện bảng "Có bản cập nhật mới" → bấm **Cập nhật** →
 app tự tải APK và mở màn hình cài đặt của Android → bấm **Cài đặt**. Dữ liệu giữ nguyên.
 Có thể kiểm tra tay ở **Cài đặt → Cập nhật → Kiểm tra bản mới**.
+Repo chỉ giữ **bản phát hành mới nhất**: mỗi lần build xong, GitHub Actions tự xoá các bản phát hành và file APK cũ.
 
 ### Bỏ repo phát hành cũ `weight_tracking_release`
 Các bản app ≤ 1.0.27 vẫn hỏi repo cũ. Vì vậy bản đầu tiên sau thay đổi này được đăng vào **cả 2 nơi**.
