@@ -4,7 +4,12 @@ App Android (Capacitor, HTML/CSS/JS thuần trong `www/`) của Mondiro, tối �
 
 ## Quy ước làm việc (người dùng đã đồng ý)
 - **Được đẩy thẳng lên `main`** sau khi đã chạy thử (người dùng không muốn bấm merge PR mỗi lần).
-  Push lên `main` → GitHub Actions tự build APK và đăng Release `build-N` → app trên máy tự báo cập nhật.
+  Cách phát hành khi Claude tự đẩy (đã kiểm chứng):
+  1. Commit có `[skip ci]` trong tiêu đề rồi `git push origin HEAD:main`
+     (build do push của Claude kích hoạt bị GitHub từ chối tạo release: "HTTP 403 Resource not accessible by integration").
+  2. Chạy workflow bằng tay: GitHub MCP `actions_run_trigger` → `run_workflow`, `workflow_id: build.yml`, `ref: main`
+     → build APK + đăng Release `build-N` → app trên máy tự báo cập nhật. Đợi ~4 phút rồi kiểm tra release mới.
+  Khi người dùng tự merge PR thì push đó tự build + phát hành như bình thường.
   Nếu người dùng nói "lần này để mình duyệt" thì tạo PR như cũ.
 - Mỗi lần giao bản mới: gửi `WeightTracking-preview.html` (từ `node build_preview.js` → `dist/preview.html`) + zip source.
 - Trả lời bằng tiếng Việt, đơn giản (người dùng là artist, không biết lập trình).

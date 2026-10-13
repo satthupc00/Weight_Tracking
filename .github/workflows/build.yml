@@ -84,11 +84,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OLD_TOKEN: ${{ secrets.RELEASES_TOKEN }}
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
           BUILD=${{ github.run_number }}
           cp android/app/build/outputs/apk/debug/app-debug.apk WeightTracking.apk
-          NOTES=$(printf '%s' "${COMMIT_MSG:-Bản build mới}" | head -c 1500)
+          # ghi chú bản phát hành = nội dung commit mới nhất (bỏ chữ [skip ci] và các dòng ký tên)
+          NOTES=$(git log -1 --format=%B | sed -e 's/ *\[skip ci\]//' -e '/^Co-Authored-By:/d' -e '/^Claude-Session:/d' | head -c 1500)
+          [ -n "$(printf '%s' "$NOTES" | tr -d '[:space:]')" ] || NOTES="Bản build mới"
           gh release create "build-$BUILD" WeightTracking.apk \
             --repo "${{ github.repository }}" \
             --target "${{ github.sha }}" \
