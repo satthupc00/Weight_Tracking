@@ -112,15 +112,15 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
 #chartCanvas{position:absolute; inset:0; width:100%; height:100%;}
 #tooltip{
   position:absolute; z-index:6; display:none;
-  background:#0c121a; border:1px solid #2a3442; border-radius:9px;
-  padding:8px 52px 8px 12px; font-size:12px; color:var(--text-2); white-space:nowrap;
-  box-shadow:0 6px 18px rgba(0,0,0,.4);
+  background:#0c121a; border:1px solid #2a3442; border-radius:10px;
+  padding:6px 6px 6px 12px; font-size:13px; color:var(--text-2);
+  box-shadow:0 6px 18px rgba(0,0,0,.4); max-width:240px;
 }
-#tooltip .w{font-family:var(--num); font-size:22px; font-weight:600; color:var(--text); line-height:1;}
-#tooltip .d{margin-top:3px;}
-#tooltip .n{max-width:210px; white-space:normal; margin-top:3px; font-style:italic;}
+#tooltip .row{display:flex; align-items:center; gap:10px;}
+#tooltip .d{white-space:nowrap; font-family:var(--num); font-size:17px; font-weight:600; color:var(--text);}
+#tooltip .n{white-space:normal; margin:4px 6px 4px 0; font-style:italic; color:#F2B84B; line-height:1.4;}   /* ghi chú: màu vàng như dấu "!" */
 #tooltip .edit{
-  position:absolute; top:8px; right:8px; width:34px; height:34px; border-radius:50%;
+  width:32px; height:32px; border-radius:50%; flex:none;
   display:grid; place-items:center; padding:0;
   background:var(--slate); border:1px solid #33435a; color:var(--teal);
 }
@@ -261,6 +261,38 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
 .roundbtn.ok{background:var(--red); color:#fff; box-shadow:0 0 0 6px rgba(230,72,63,.18);}
 .roundbtn.cancel{background:var(--slate); color:var(--text-2); border:1px solid #33435a;}
 
+/* ---------- bảng kết quả sau khi cân ---------- */
+#resultCatcher{position:fixed; inset:0; z-index:60; display:none;}
+#resultCatcher.on{display:block;}
+#resultSheet{
+  position:fixed; left:50%; bottom:calc(104px + env(safe-area-inset-bottom)); z-index:61;
+  width:min(440px, calc(100% - 32px)); transform:translate(-50%, 160%); visibility:hidden;
+  display:flex; align-items:center; gap:14px; padding:16px 18px;
+  background:var(--slate); border:1px solid #33435a; border-radius:18px;
+  box-shadow:0 14px 40px rgba(0,0,0,.5); pointer-events:none;
+}
+#resultSheet.show{visibility:visible; animation:resultUp .62s linear forwards;}
+#resultSheet.hide{visibility:visible; animation:resultDown .48s linear forwards;}
+/* trượt lên vượt quá 1 chút rồi nhún về; trượt xuống thì hất nhẹ lên trước rồi rơi */
+@keyframes resultUp{
+  0%{transform:translate(-50%,160%); animation-timing-function:cubic-bezier(.2,.9,.3,1);}
+  55%{transform:translate(-50%,-12px); animation-timing-function:ease-in-out;}
+  78%{transform:translate(-50%,4px); animation-timing-function:ease-in-out;}
+  100%{transform:translate(-50%,0);}
+}
+@keyframes resultDown{
+  0%{transform:translate(-50%,0); animation-timing-function:ease-out;}
+  28%{transform:translate(-50%,-14px); animation-timing-function:cubic-bezier(.5,0,.9,.4);}
+  100%{transform:translate(-50%,170%);}
+}
+#resultSheet .ricon{width:48px; height:48px; border-radius:14px; flex:none; display:grid; place-items:center;}
+#resultSheet .rtitle{font-size:16px; font-weight:600; line-height:1.35;}
+#resultSheet .rtitle b{font-family:var(--num); font-size:22px; font-weight:700;}
+#resultSheet .rsub{font-size:12.5px; color:var(--text-dim); margin-top:3px;}
+#resultSheet.good .ricon{background:rgba(95,211,154,.14); color:var(--down);}  #resultSheet.good .rtitle b{color:var(--down);}
+#resultSheet.bad  .ricon{background:rgba(240,122,110,.14); color:var(--up);}   #resultSheet.bad  .rtitle b{color:var(--up);}
+#resultSheet.same .ricon{background:rgba(167,180,193,.12); color:var(--text-2);}
+
 /* ---------- small overlays (note / update) ---------- */
 .overlay{position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:80; display:none; align-items:flex-end; justify-content:center;}
 .overlay.active{display:flex;}
@@ -282,6 +314,8 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
 @media (prefers-reduced-motion: reduce){
   .side, .jhead .chev, .rows, .tapewrap svg, button, .tab-ind, .tag{transition:none !important;}
   #entryModal, #entryModal .roundbtn{animation:none !important;}
+  #resultSheet.show{animation:none !important; transform:translate(-50%,0);}
+  #resultSheet.hide{animation:none !important; visibility:hidden;}
 }
 
 </style>
@@ -327,8 +361,9 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
         <div id="chartWrap">
           <canvas id="chartCanvas"></canvas>
           <div id="tooltip">
-            <div class="w"></div><div class="d"></div><div class="n"></div>
-            <button class="edit" id="tooltipEditBtn" title="Sửa" aria-label="Sửa lần cân này"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+            <div class="row"><div class="d"></div>
+            <button class="edit" id="tooltipEditBtn" title="Sửa" aria-label="Sửa lần cân này"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button></div>
+            <div class="n"></div>
           </div>
           <div id="emptyState"><div>Chưa có số cân nào.</div><div>Bấm nút + để nhập lần cân đầu tiên.</div></div>
         </div>
@@ -378,6 +413,13 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
   <div id="credit">Created by Mondiro</div>
 </div>
 
+<!-- ===================== KẾT QUẢ SAU KHI CÂN (trượt lên, chạm để tắt) ===================== -->
+<div id="resultCatcher"></div>
+<div id="resultSheet" role="status" aria-live="polite">
+  <div class="ricon" id="resultIcon"></div>
+  <div class="rtext"><div class="rtitle" id="resultTitle"></div><div class="rsub" id="resultSub"></div></div>
+</div>
+
 <!-- ===================== ADD/EDIT ENTRY MODAL (dùng chung cho nút + và nút sửa) ===================== -->
 <div id="entryModal">
   <div class="modal-header"><span class="editIcon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span><span id="modalTitle">Cân hôm nay</span></div>
@@ -424,7 +466,7 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
 </div>
 
 <script>
-window.__WT_SEED_ENTRIES__ = [{"id":"2026-02-14","date":"2026-02-14","weight":77.9,"note":""},{"id":"2026-02-15","date":"2026-02-15","weight":78,"note":""},{"id":"2026-02-16","date":"2026-02-16","weight":78.3,"note":""},{"id":"2026-02-17","date":"2026-02-17","weight":78.4,"note":""},{"id":"2026-02-18","date":"2026-02-18","weight":78.3,"note":""},{"id":"2026-02-19","date":"2026-02-19","weight":78.1,"note":""},{"id":"2026-02-20","date":"2026-02-20","weight":78.3,"note":""},{"id":"2026-02-21","date":"2026-02-21","weight":78.5,"note":""},{"id":"2026-02-22","date":"2026-02-22","weight":78.4,"note":""},{"id":"2026-02-23","date":"2026-02-23","weight":78.4,"note":""},{"id":"2026-02-24","date":"2026-02-24","weight":78.2,"note":""},{"id":"2026-02-25","date":"2026-02-25","weight":78.2,"note":""},{"id":"2026-02-26","date":"2026-02-26","weight":78.2,"note":""},{"id":"2026-02-27","date":"2026-02-27","weight":78.1,"note":""},{"id":"2026-02-28","date":"2026-02-28","weight":78,"note":""},{"id":"2026-03-01","date":"2026-03-01","weight":78.2,"note":""},{"id":"2026-03-02","date":"2026-03-02","weight":78,"note":""},{"id":"2026-03-03","date":"2026-03-03","weight":78.1,"note":""},{"id":"2026-03-04","date":"2026-03-04","weight":78.1,"note":""},{"id":"2026-03-05","date":"2026-03-05","weight":78,"note":"ghi chú mẫu"},{"id":"2026-03-06","date":"2026-03-06","weight":77.8,"note":""},{"id":"2026-03-08","date":"2026-03-08","weight":77.7,"note":""},{"id":"2026-03-09","date":"2026-03-09","weight":77.9,"note":""},{"id":"2026-03-10","date":"2026-03-10","weight":78.1,"note":""},{"id":"2026-03-11","date":"2026-03-11","weight":77.9,"note":""},{"id":"2026-03-12","date":"2026-03-12","weight":77.9,"note":""},{"id":"2026-03-13","date":"2026-03-13","weight":77.9,"note":""},{"id":"2026-03-14","date":"2026-03-14","weight":77.9,"note":""},{"id":"2026-03-15","date":"2026-03-15","weight":77.7,"note":""},{"id":"2026-03-16","date":"2026-03-16","weight":77.6,"note":""},{"id":"2026-03-17","date":"2026-03-17","weight":77.5,"note":""},{"id":"2026-03-18","date":"2026-03-18","weight":77.5,"note":""},{"id":"2026-03-19","date":"2026-03-19","weight":77.6,"note":""},{"id":"2026-03-20","date":"2026-03-20","weight":77.8,"note":""},{"id":"2026-03-21","date":"2026-03-21","weight":77.6,"note":""},{"id":"2026-03-22","date":"2026-03-22","weight":77.8,"note":""},{"id":"2026-03-23","date":"2026-03-23","weight":77.6,"note":""},{"id":"2026-03-24","date":"2026-03-24","weight":77.6,"note":"ghi chú mẫu"},{"id":"2026-03-25","date":"2026-03-25","weight":77.7,"note":""},{"id":"2026-03-26","date":"2026-03-26","weight":78,"note":""},{"id":"2026-03-27","date":"2026-03-27","weight":77.9,"note":"ghi chú mẫu"},{"id":"2026-03-28","date":"2026-03-28","weight":78,"note":""},{"id":"2026-03-29","date":"2026-03-29","weight":78.1,"note":""},{"id":"2026-03-30","date":"2026-03-30","weight":78.4,"note":""},{"id":"2026-04-01","date":"2026-04-01","weight":78.2,"note":""},{"id":"2026-04-02","date":"2026-04-02","weight":78.1,"note":""},{"id":"2026-04-03","date":"2026-04-03","weight":78.1,"note":""},{"id":"2026-04-04","date":"2026-04-04","weight":77.9,"note":""},{"id":"2026-04-05","date":"2026-04-05","weight":78,"note":""},{"id":"2026-04-06","date":"2026-04-06","weight":78.2,"note":""},{"id":"2026-04-07","date":"2026-04-07","weight":78.2,"note":""},{"id":"2026-04-08","date":"2026-04-08","weight":78.1,"note":"ghi chú mẫu"},{"id":"2026-04-09","date":"2026-04-09","weight":78.1,"note":""},{"id":"2026-04-13","date":"2026-04-13","weight":78.2,"note":""},{"id":"2026-04-14","date":"2026-04-14","weight":78.1,"note":""},{"id":"2026-04-15","date":"2026-04-15","weight":78,"note":""},{"id":"2026-04-16","date":"2026-04-16","weight":77.9,"note":""},{"id":"2026-04-17","date":"2026-04-17","weight":77.8,"note":""},{"id":"2026-04-18","date":"2026-04-18","weight":77.6,"note":""},{"id":"2026-04-19","date":"2026-04-19","weight":77.9,"note":""},{"id":"2026-04-20","date":"2026-04-20","weight":78,"note":""},{"id":"2026-04-21","date":"2026-04-21","weight":78.1,"note":""},{"id":"2026-04-23","date":"2026-04-23","weight":77.9,"note":""},{"id":"2026-04-24","date":"2026-04-24","weight":77.9,"note":""},{"id":"2026-04-25","date":"2026-04-25","weight":78,"note":""},{"id":"2026-04-26","date":"2026-04-26","weight":77.9,"note":""},{"id":"2026-04-27","date":"2026-04-27","weight":77.9,"note":""},{"id":"2026-04-28","date":"2026-04-28","weight":77.9,"note":""},{"id":"2026-04-29","date":"2026-04-29","weight":77.8,"note":"ghi chú mẫu"},{"id":"2026-04-30","date":"2026-04-30","weight":77.8,"note":""},{"id":"2026-05-01","date":"2026-05-01","weight":77.5,"note":""},{"id":"2026-05-02","date":"2026-05-02","weight":77.3,"note":""},{"id":"2026-05-03","date":"2026-05-03","weight":77.6,"note":""},{"id":"2026-05-04","date":"2026-05-04","weight":77.8,"note":""},{"id":"2026-05-05","date":"2026-05-05","weight":78.1,"note":""},{"id":"2026-05-06","date":"2026-05-06","weight":78.1,"note":""},{"id":"2026-05-07","date":"2026-05-07","weight":77.9,"note":""},{"id":"2026-05-08","date":"2026-05-08","weight":77.6,"note":""},{"id":"2026-05-09","date":"2026-05-09","weight":77.9,"note":""},{"id":"2026-05-10","date":"2026-05-10","weight":77.9,"note":""},{"id":"2026-05-11","date":"2026-05-11","weight":77.7,"note":""},{"id":"2026-05-12","date":"2026-05-12","weight":77.9,"note":""},{"id":"2026-05-13","date":"2026-05-13","weight":78.1,"note":""},{"id":"2026-05-14","date":"2026-05-14","weight":78.3,"note":""},{"id":"2026-05-15","date":"2026-05-15","weight":78.5,"note":""},{"id":"2026-05-16","date":"2026-05-16","weight":78.3,"note":""},{"id":"2026-05-17","date":"2026-05-17","weight":78.2,"note":""},{"id":"2026-05-18","date":"2026-05-18","weight":78,"note":""},{"id":"2026-05-19","date":"2026-05-19","weight":78.2,"note":""},{"id":"2026-05-21","date":"2026-05-21","weight":78.4,"note":""},{"id":"2026-05-22","date":"2026-05-22","weight":78.5,"note":""},{"id":"2026-05-23","date":"2026-05-23","weight":78.4,"note":""},{"id":"2026-05-24","date":"2026-05-24","weight":78.4,"note":""},{"id":"2026-05-25","date":"2026-05-25","weight":78.4,"note":""},{"id":"2026-05-26","date":"2026-05-26","weight":78.1,"note":""},{"id":"2026-05-27","date":"2026-05-27","weight":78.3,"note":""},{"id":"2026-05-28","date":"2026-05-28","weight":78.5,"note":""},{"id":"2026-05-29","date":"2026-05-29","weight":78.5,"note":""},{"id":"2026-05-30","date":"2026-05-30","weight":78.5,"note":""},{"id":"2026-05-31","date":"2026-05-31","weight":78.5,"note":""},{"id":"2026-06-01","date":"2026-06-01","weight":78.4,"note":""},{"id":"2026-06-03","date":"2026-06-03","weight":78.6,"note":""},{"id":"2026-06-04","date":"2026-06-04","weight":78.3,"note":""},{"id":"2026-06-05","date":"2026-06-05","weight":78.5,"note":""},{"id":"2026-06-06","date":"2026-06-06","weight":78.7,"note":""},{"id":"2026-06-07","date":"2026-06-07","weight":79,"note":""},{"id":"2026-06-08","date":"2026-06-08","weight":78.8,"note":""},{"id":"2026-06-09","date":"2026-06-09","weight":79,"note":""},{"id":"2026-06-10","date":"2026-06-10","weight":78.9,"note":"ghi chú mẫu"},{"id":"2026-06-11","date":"2026-06-11","weight":78.7,"note":""},{"id":"2026-06-12","date":"2026-06-12","weight":78.7,"note":""},{"id":"2026-06-14","date":"2026-06-14","weight":78.7,"note":""},{"id":"2026-06-15","date":"2026-06-15","weight":78.9,"note":""},{"id":"2026-06-16","date":"2026-06-16","weight":78.7,"note":""},{"id":"2026-06-19","date":"2026-06-19","weight":78.7,"note":""},{"id":"2026-06-20","date":"2026-06-20","weight":78.6,"note":""},{"id":"2026-06-22","date":"2026-06-22","weight":78.6,"note":""},{"id":"2026-06-24","date":"2026-06-24","weight":78.5,"note":""},{"id":"2026-06-25","date":"2026-06-25","weight":78.3,"note":""},{"id":"2026-06-26","date":"2026-06-26","weight":78.1,"note":""},{"id":"2026-06-27","date":"2026-06-27","weight":77.8,"note":""},{"id":"2026-06-28","date":"2026-06-28","weight":77.8,"note":"ghi chú mẫu"},{"id":"2026-06-30","date":"2026-06-30","weight":77.9,"note":""},{"id":"2026-07-01","date":"2026-07-01","weight":77.8,"note":""},{"id":"2026-07-02","date":"2026-07-02","weight":77.9,"note":"ghi chú mẫu"},{"id":"2026-07-03","date":"2026-07-03","weight":77.8,"note":""},{"id":"2026-07-04","date":"2026-07-04","weight":77.8,"note":""},{"id":"2026-07-06","date":"2026-07-06","weight":77.6,"note":""},{"id":"2026-07-07","date":"2026-07-07","weight":77.8,"note":""},{"id":"2026-07-09","date":"2026-07-09","weight":78.1,"note":""},{"id":"2026-07-10","date":"2026-07-10","weight":78.4,"note":""},{"id":"2026-07-12","date":"2026-07-12","weight":78.5,"note":""},{"id":"2026-07-13","date":"2026-07-13","weight":78.5,"note":""},{"id":"2026-07-14","date":"2026-07-14","weight":78.2,"note":""},{"id":"2026-07-15","date":"2026-07-15","weight":78.4,"note":""},{"id":"2026-07-16","date":"2026-07-16","weight":78.4,"note":""},{"id":"2026-07-17","date":"2026-07-17","weight":78.3,"note":""},{"id":"2026-07-18","date":"2026-07-18","weight":78.3,"note":""},{"id":"2026-07-19","date":"2026-07-19","weight":78.6,"note":""},{"id":"2026-07-20","date":"2026-07-20","weight":78.6,"note":""},{"id":"2026-07-21","date":"2026-07-21","weight":78.8,"note":""},{"id":"2026-07-22","date":"2026-07-22","weight":78.6,"note":""},{"id":"2026-07-23","date":"2026-07-23","weight":78.5,"note":""},{"id":"2026-07-25","date":"2026-07-25","weight":78.4,"note":""},{"id":"2026-07-27","date":"2026-07-27","weight":78.2,"note":"ghi chú mẫu"},{"id":"2026-07-28","date":"2026-07-28","weight":78.1,"note":""},{"id":"2026-07-29","date":"2026-07-29","weight":78.4,"note":""},{"id":"2026-07-30","date":"2026-07-30","weight":78.4,"note":""},{"id":"2026-07-31","date":"2026-07-31","weight":78.5,"note":""},{"id":"2026-08-01","date":"2026-08-01","weight":78.7,"note":""},{"id":"2026-08-02","date":"2026-08-02","weight":78.8,"note":""},{"id":"2026-08-03","date":"2026-08-03","weight":78.6,"note":""},{"id":"2026-08-04","date":"2026-08-04","weight":78.6,"note":"ghi chú mẫu"},{"id":"2026-08-05","date":"2026-08-05","weight":78.6,"note":""},{"id":"2026-08-06","date":"2026-08-06","weight":78.6,"note":""},{"id":"2026-08-07","date":"2026-08-07","weight":78.4,"note":""},{"id":"2026-08-08","date":"2026-08-08","weight":78.1,"note":""},{"id":"2026-08-09","date":"2026-08-09","weight":77.9,"note":""},{"id":"2026-08-10","date":"2026-08-10","weight":77.9,"note":""},{"id":"2026-08-11","date":"2026-08-11","weight":77.6,"note":""},{"id":"2026-08-13","date":"2026-08-13","weight":77.4,"note":""},{"id":"2026-08-14","date":"2026-08-14","weight":77.1,"note":""},{"id":"2026-08-15","date":"2026-08-15","weight":77.4,"note":""},{"id":"2026-08-16","date":"2026-08-16","weight":77.4,"note":""},{"id":"2026-08-18","date":"2026-08-18","weight":77.4,"note":""},{"id":"2026-08-19","date":"2026-08-19","weight":77.6,"note":""},{"id":"2026-08-20","date":"2026-08-20","weight":77.7,"note":""},{"id":"2026-08-21","date":"2026-08-21","weight":77.7,"note":""},{"id":"2026-08-23","date":"2026-08-23","weight":77.6,"note":""},{"id":"2026-08-24","date":"2026-08-24","weight":77.4,"note":""},{"id":"2026-08-25","date":"2026-08-25","weight":77.6,"note":""},{"id":"2026-08-26","date":"2026-08-26","weight":77.4,"note":""},{"id":"2026-08-28","date":"2026-08-28","weight":77.6,"note":""},{"id":"2026-08-29","date":"2026-08-29","weight":77.6,"note":""},{"id":"2026-08-30","date":"2026-08-30","weight":77.4,"note":""},{"id":"2026-08-31","date":"2026-08-31","weight":77.7,"note":""},{"id":"2026-09-01","date":"2026-09-01","weight":77.9,"note":"ghi chú mẫu"},{"id":"2026-09-02","date":"2026-09-02","weight":78.2,"note":""},{"id":"2026-09-03","date":"2026-09-03","weight":78,"note":""},{"id":"2026-09-04","date":"2026-09-04","weight":77.9,"note":""},{"id":"2026-09-05","date":"2026-09-05","weight":78.1,"note":""},{"id":"2026-09-06","date":"2026-09-06","weight":78.2,"note":""},{"id":"2026-09-07","date":"2026-09-07","weight":78.1,"note":""},{"id":"2026-09-08","date":"2026-09-08","weight":78,"note":""},{"id":"2026-09-09","date":"2026-09-09","weight":77.9,"note":""},{"id":"2026-09-10","date":"2026-09-10","weight":78.2,"note":""},{"id":"2026-09-11","date":"2026-09-11","weight":77.9,"note":""},{"id":"2026-09-12","date":"2026-09-12","weight":78.2,"note":""},{"id":"2026-09-13","date":"2026-09-13","weight":78,"note":""},{"id":"2026-09-14","date":"2026-09-14","weight":78,"note":""},{"id":"2026-09-15","date":"2026-09-15","weight":78.3,"note":"ghi chú mẫu"},{"id":"2026-09-16","date":"2026-09-16","weight":78.1,"note":""},{"id":"2026-09-17","date":"2026-09-17","weight":78.3,"note":""},{"id":"2026-09-18","date":"2026-09-18","weight":78.2,"note":""},{"id":"2026-09-19","date":"2026-09-19","weight":78.4,"note":""},{"id":"2026-09-20","date":"2026-09-20","weight":78.3,"note":""},{"id":"2026-09-21","date":"2026-09-21","weight":78.4,"note":""},{"id":"2026-09-22","date":"2026-09-22","weight":78.6,"note":""},{"id":"2026-09-23","date":"2026-09-23","weight":78.7,"note":""},{"id":"2026-09-24","date":"2026-09-24","weight":78.8,"note":""},{"id":"2026-09-25","date":"2026-09-25","weight":78.6,"note":""},{"id":"2026-09-26","date":"2026-09-26","weight":78.8,"note":""},{"id":"2026-09-27","date":"2026-09-27","weight":79,"note":""},{"id":"2026-09-28","date":"2026-09-28","weight":79.1,"note":""},{"id":"2026-09-29","date":"2026-09-29","weight":78.8,"note":""},{"id":"2026-09-30","date":"2026-09-30","weight":78.8,"note":""},{"id":"2026-10-01","date":"2026-10-01","weight":79,"note":""},{"id":"2026-10-02","date":"2026-10-02","weight":79.3,"note":""},{"id":"2026-10-03","date":"2026-10-03","weight":79.6,"note":""},{"id":"2026-10-04","date":"2026-10-04","weight":79.5,"note":""},{"id":"2026-10-05","date":"2026-10-05","weight":79.4,"note":""},{"id":"2026-10-06","date":"2026-10-06","weight":79.2,"note":""},{"id":"2026-10-07","date":"2026-10-07","weight":79.4,"note":""},{"id":"2026-10-08","date":"2026-10-08","weight":79.6,"note":""},{"id":"2026-10-09","date":"2026-10-09","weight":79.9,"note":""},{"id":"2026-10-10","date":"2026-10-10","weight":79.6,"note":""},{"id":"2026-10-12","date":"2026-10-12","weight":79.5,"note":""}];
+window.__WT_SEED_ENTRIES__ = [{"id":"2026-02-15","date":"2026-02-15","weight":77.9,"note":""},{"id":"2026-02-16","date":"2026-02-16","weight":78,"note":""},{"id":"2026-02-17","date":"2026-02-17","weight":78.3,"note":""},{"id":"2026-02-18","date":"2026-02-18","weight":78.4,"note":""},{"id":"2026-02-19","date":"2026-02-19","weight":78.3,"note":""},{"id":"2026-02-20","date":"2026-02-20","weight":78.1,"note":""},{"id":"2026-02-21","date":"2026-02-21","weight":78.3,"note":""},{"id":"2026-02-22","date":"2026-02-22","weight":78.5,"note":""},{"id":"2026-02-23","date":"2026-02-23","weight":78.4,"note":""},{"id":"2026-02-24","date":"2026-02-24","weight":78.4,"note":""},{"id":"2026-02-25","date":"2026-02-25","weight":78.2,"note":""},{"id":"2026-02-26","date":"2026-02-26","weight":78.2,"note":""},{"id":"2026-02-27","date":"2026-02-27","weight":78.2,"note":""},{"id":"2026-02-28","date":"2026-02-28","weight":78.1,"note":""},{"id":"2026-03-01","date":"2026-03-01","weight":78,"note":""},{"id":"2026-03-02","date":"2026-03-02","weight":78.2,"note":""},{"id":"2026-03-03","date":"2026-03-03","weight":78,"note":""},{"id":"2026-03-04","date":"2026-03-04","weight":78.1,"note":""},{"id":"2026-03-05","date":"2026-03-05","weight":78.1,"note":""},{"id":"2026-03-06","date":"2026-03-06","weight":78,"note":"ghi chú mẫu"},{"id":"2026-03-07","date":"2026-03-07","weight":77.8,"note":""},{"id":"2026-03-09","date":"2026-03-09","weight":77.7,"note":""},{"id":"2026-03-10","date":"2026-03-10","weight":77.9,"note":""},{"id":"2026-03-11","date":"2026-03-11","weight":78.1,"note":""},{"id":"2026-03-12","date":"2026-03-12","weight":77.9,"note":""},{"id":"2026-03-13","date":"2026-03-13","weight":77.9,"note":""},{"id":"2026-03-14","date":"2026-03-14","weight":77.9,"note":""},{"id":"2026-03-15","date":"2026-03-15","weight":77.9,"note":""},{"id":"2026-03-16","date":"2026-03-16","weight":77.7,"note":""},{"id":"2026-03-17","date":"2026-03-17","weight":77.6,"note":""},{"id":"2026-03-18","date":"2026-03-18","weight":77.5,"note":""},{"id":"2026-03-19","date":"2026-03-19","weight":77.5,"note":""},{"id":"2026-03-20","date":"2026-03-20","weight":77.6,"note":""},{"id":"2026-03-21","date":"2026-03-21","weight":77.8,"note":""},{"id":"2026-03-22","date":"2026-03-22","weight":77.6,"note":""},{"id":"2026-03-23","date":"2026-03-23","weight":77.8,"note":""},{"id":"2026-03-24","date":"2026-03-24","weight":77.6,"note":""},{"id":"2026-03-25","date":"2026-03-25","weight":77.6,"note":"ghi chú mẫu"},{"id":"2026-03-26","date":"2026-03-26","weight":77.7,"note":""},{"id":"2026-03-27","date":"2026-03-27","weight":78,"note":""},{"id":"2026-03-28","date":"2026-03-28","weight":77.9,"note":"ghi chú mẫu"},{"id":"2026-03-29","date":"2026-03-29","weight":78,"note":""},{"id":"2026-03-30","date":"2026-03-30","weight":78.1,"note":""},{"id":"2026-03-31","date":"2026-03-31","weight":78.4,"note":""},{"id":"2026-04-02","date":"2026-04-02","weight":78.2,"note":""},{"id":"2026-04-03","date":"2026-04-03","weight":78.1,"note":""},{"id":"2026-04-04","date":"2026-04-04","weight":78.1,"note":""},{"id":"2026-04-05","date":"2026-04-05","weight":77.9,"note":""},{"id":"2026-04-06","date":"2026-04-06","weight":78,"note":""},{"id":"2026-04-07","date":"2026-04-07","weight":78.2,"note":""},{"id":"2026-04-08","date":"2026-04-08","weight":78.2,"note":""},{"id":"2026-04-09","date":"2026-04-09","weight":78.1,"note":"ghi chú mẫu"},{"id":"2026-04-10","date":"2026-04-10","weight":78.1,"note":""},{"id":"2026-04-14","date":"2026-04-14","weight":78.2,"note":""},{"id":"2026-04-15","date":"2026-04-15","weight":78.1,"note":""},{"id":"2026-04-16","date":"2026-04-16","weight":78,"note":""},{"id":"2026-04-17","date":"2026-04-17","weight":77.9,"note":""},{"id":"2026-04-18","date":"2026-04-18","weight":77.8,"note":""},{"id":"2026-04-19","date":"2026-04-19","weight":77.6,"note":""},{"id":"2026-04-20","date":"2026-04-20","weight":77.9,"note":""},{"id":"2026-04-21","date":"2026-04-21","weight":78,"note":""},{"id":"2026-04-22","date":"2026-04-22","weight":78.1,"note":""},{"id":"2026-04-24","date":"2026-04-24","weight":77.9,"note":""},{"id":"2026-04-25","date":"2026-04-25","weight":77.9,"note":""},{"id":"2026-04-26","date":"2026-04-26","weight":78,"note":""},{"id":"2026-04-27","date":"2026-04-27","weight":77.9,"note":""},{"id":"2026-04-28","date":"2026-04-28","weight":77.9,"note":""},{"id":"2026-04-29","date":"2026-04-29","weight":77.9,"note":""},{"id":"2026-04-30","date":"2026-04-30","weight":77.8,"note":"ghi chú mẫu"},{"id":"2026-05-01","date":"2026-05-01","weight":77.8,"note":""},{"id":"2026-05-02","date":"2026-05-02","weight":77.5,"note":""},{"id":"2026-05-03","date":"2026-05-03","weight":77.3,"note":""},{"id":"2026-05-04","date":"2026-05-04","weight":77.6,"note":""},{"id":"2026-05-05","date":"2026-05-05","weight":77.8,"note":""},{"id":"2026-05-06","date":"2026-05-06","weight":78.1,"note":""},{"id":"2026-05-07","date":"2026-05-07","weight":78.1,"note":""},{"id":"2026-05-08","date":"2026-05-08","weight":77.9,"note":""},{"id":"2026-05-09","date":"2026-05-09","weight":77.6,"note":""},{"id":"2026-05-10","date":"2026-05-10","weight":77.9,"note":""},{"id":"2026-05-11","date":"2026-05-11","weight":77.9,"note":""},{"id":"2026-05-12","date":"2026-05-12","weight":77.7,"note":""},{"id":"2026-05-13","date":"2026-05-13","weight":77.9,"note":""},{"id":"2026-05-14","date":"2026-05-14","weight":78.1,"note":""},{"id":"2026-05-15","date":"2026-05-15","weight":78.3,"note":""},{"id":"2026-05-16","date":"2026-05-16","weight":78.5,"note":""},{"id":"2026-05-17","date":"2026-05-17","weight":78.3,"note":""},{"id":"2026-05-18","date":"2026-05-18","weight":78.2,"note":""},{"id":"2026-05-19","date":"2026-05-19","weight":78,"note":""},{"id":"2026-05-20","date":"2026-05-20","weight":78.2,"note":""},{"id":"2026-05-22","date":"2026-05-22","weight":78.4,"note":""},{"id":"2026-05-23","date":"2026-05-23","weight":78.5,"note":""},{"id":"2026-05-24","date":"2026-05-24","weight":78.4,"note":""},{"id":"2026-05-25","date":"2026-05-25","weight":78.4,"note":""},{"id":"2026-05-26","date":"2026-05-26","weight":78.4,"note":""},{"id":"2026-05-27","date":"2026-05-27","weight":78.1,"note":""},{"id":"2026-05-28","date":"2026-05-28","weight":78.3,"note":""},{"id":"2026-05-29","date":"2026-05-29","weight":78.5,"note":""},{"id":"2026-05-30","date":"2026-05-30","weight":78.5,"note":""},{"id":"2026-05-31","date":"2026-05-31","weight":78.5,"note":""},{"id":"2026-06-01","date":"2026-06-01","weight":78.5,"note":""},{"id":"2026-06-02","date":"2026-06-02","weight":78.4,"note":""},{"id":"2026-06-04","date":"2026-06-04","weight":78.6,"note":""},{"id":"2026-06-05","date":"2026-06-05","weight":78.3,"note":""},{"id":"2026-06-06","date":"2026-06-06","weight":78.5,"note":""},{"id":"2026-06-07","date":"2026-06-07","weight":78.7,"note":""},{"id":"2026-06-08","date":"2026-06-08","weight":79,"note":""},{"id":"2026-06-09","date":"2026-06-09","weight":78.8,"note":""},{"id":"2026-06-10","date":"2026-06-10","weight":79,"note":""},{"id":"2026-06-11","date":"2026-06-11","weight":78.9,"note":"ghi chú mẫu"},{"id":"2026-06-12","date":"2026-06-12","weight":78.7,"note":""},{"id":"2026-06-13","date":"2026-06-13","weight":78.7,"note":""},{"id":"2026-06-15","date":"2026-06-15","weight":78.7,"note":""},{"id":"2026-06-16","date":"2026-06-16","weight":78.9,"note":""},{"id":"2026-06-17","date":"2026-06-17","weight":78.7,"note":""},{"id":"2026-06-20","date":"2026-06-20","weight":78.7,"note":""},{"id":"2026-06-21","date":"2026-06-21","weight":78.6,"note":""},{"id":"2026-06-23","date":"2026-06-23","weight":78.6,"note":""},{"id":"2026-06-25","date":"2026-06-25","weight":78.5,"note":""},{"id":"2026-06-26","date":"2026-06-26","weight":78.3,"note":""},{"id":"2026-06-27","date":"2026-06-27","weight":78.1,"note":""},{"id":"2026-06-28","date":"2026-06-28","weight":77.8,"note":""},{"id":"2026-06-29","date":"2026-06-29","weight":77.8,"note":"ghi chú mẫu"},{"id":"2026-07-01","date":"2026-07-01","weight":77.9,"note":""},{"id":"2026-07-02","date":"2026-07-02","weight":77.8,"note":""},{"id":"2026-07-03","date":"2026-07-03","weight":77.9,"note":"ghi chú mẫu"},{"id":"2026-07-04","date":"2026-07-04","weight":77.8,"note":""},{"id":"2026-07-05","date":"2026-07-05","weight":77.8,"note":""},{"id":"2026-07-07","date":"2026-07-07","weight":77.6,"note":""},{"id":"2026-07-08","date":"2026-07-08","weight":77.8,"note":""},{"id":"2026-07-10","date":"2026-07-10","weight":78.1,"note":""},{"id":"2026-07-11","date":"2026-07-11","weight":78.4,"note":""},{"id":"2026-07-13","date":"2026-07-13","weight":78.5,"note":""},{"id":"2026-07-14","date":"2026-07-14","weight":78.5,"note":""},{"id":"2026-07-15","date":"2026-07-15","weight":78.2,"note":""},{"id":"2026-07-16","date":"2026-07-16","weight":78.4,"note":""},{"id":"2026-07-17","date":"2026-07-17","weight":78.4,"note":""},{"id":"2026-07-18","date":"2026-07-18","weight":78.3,"note":""},{"id":"2026-07-19","date":"2026-07-19","weight":78.3,"note":""},{"id":"2026-07-20","date":"2026-07-20","weight":78.6,"note":""},{"id":"2026-07-21","date":"2026-07-21","weight":78.6,"note":""},{"id":"2026-07-22","date":"2026-07-22","weight":78.8,"note":""},{"id":"2026-07-23","date":"2026-07-23","weight":78.6,"note":""},{"id":"2026-07-24","date":"2026-07-24","weight":78.5,"note":""},{"id":"2026-07-26","date":"2026-07-26","weight":78.4,"note":""},{"id":"2026-07-28","date":"2026-07-28","weight":78.2,"note":"ghi chú mẫu"},{"id":"2026-07-29","date":"2026-07-29","weight":78.1,"note":""},{"id":"2026-07-30","date":"2026-07-30","weight":78.4,"note":""},{"id":"2026-07-31","date":"2026-07-31","weight":78.4,"note":""},{"id":"2026-08-01","date":"2026-08-01","weight":78.5,"note":""},{"id":"2026-08-02","date":"2026-08-02","weight":78.7,"note":""},{"id":"2026-08-03","date":"2026-08-03","weight":78.8,"note":""},{"id":"2026-08-04","date":"2026-08-04","weight":78.6,"note":""},{"id":"2026-08-05","date":"2026-08-05","weight":78.6,"note":"ghi chú mẫu"},{"id":"2026-08-06","date":"2026-08-06","weight":78.6,"note":""},{"id":"2026-08-07","date":"2026-08-07","weight":78.6,"note":""},{"id":"2026-08-08","date":"2026-08-08","weight":78.4,"note":""},{"id":"2026-08-09","date":"2026-08-09","weight":78.1,"note":""},{"id":"2026-08-10","date":"2026-08-10","weight":77.9,"note":""},{"id":"2026-08-11","date":"2026-08-11","weight":77.9,"note":""},{"id":"2026-08-12","date":"2026-08-12","weight":77.6,"note":""},{"id":"2026-08-14","date":"2026-08-14","weight":77.4,"note":""},{"id":"2026-08-15","date":"2026-08-15","weight":77.1,"note":""},{"id":"2026-08-16","date":"2026-08-16","weight":77.4,"note":""},{"id":"2026-08-17","date":"2026-08-17","weight":77.4,"note":""},{"id":"2026-08-19","date":"2026-08-19","weight":77.4,"note":""},{"id":"2026-08-20","date":"2026-08-20","weight":77.6,"note":""},{"id":"2026-08-21","date":"2026-08-21","weight":77.7,"note":""},{"id":"2026-08-22","date":"2026-08-22","weight":77.7,"note":""},{"id":"2026-08-24","date":"2026-08-24","weight":77.6,"note":""},{"id":"2026-08-25","date":"2026-08-25","weight":77.4,"note":""},{"id":"2026-08-26","date":"2026-08-26","weight":77.6,"note":""},{"id":"2026-08-27","date":"2026-08-27","weight":77.4,"note":""},{"id":"2026-08-29","date":"2026-08-29","weight":77.6,"note":""},{"id":"2026-08-30","date":"2026-08-30","weight":77.6,"note":""},{"id":"2026-08-31","date":"2026-08-31","weight":77.4,"note":""},{"id":"2026-09-01","date":"2026-09-01","weight":77.7,"note":""},{"id":"2026-09-02","date":"2026-09-02","weight":77.9,"note":"ghi chú mẫu"},{"id":"2026-09-03","date":"2026-09-03","weight":78.2,"note":""},{"id":"2026-09-04","date":"2026-09-04","weight":78,"note":""},{"id":"2026-09-05","date":"2026-09-05","weight":77.9,"note":""},{"id":"2026-09-06","date":"2026-09-06","weight":78.1,"note":""},{"id":"2026-09-07","date":"2026-09-07","weight":78.2,"note":""},{"id":"2026-09-08","date":"2026-09-08","weight":78.1,"note":""},{"id":"2026-09-09","date":"2026-09-09","weight":78,"note":""},{"id":"2026-09-10","date":"2026-09-10","weight":77.9,"note":""},{"id":"2026-09-11","date":"2026-09-11","weight":78.2,"note":""},{"id":"2026-09-12","date":"2026-09-12","weight":77.9,"note":""},{"id":"2026-09-13","date":"2026-09-13","weight":78.2,"note":""},{"id":"2026-09-14","date":"2026-09-14","weight":78,"note":""},{"id":"2026-09-15","date":"2026-09-15","weight":78,"note":""},{"id":"2026-09-16","date":"2026-09-16","weight":78.3,"note":"ghi chú mẫu"},{"id":"2026-09-17","date":"2026-09-17","weight":78.1,"note":""},{"id":"2026-09-18","date":"2026-09-18","weight":78.3,"note":""},{"id":"2026-09-19","date":"2026-09-19","weight":78.2,"note":""},{"id":"2026-09-20","date":"2026-09-20","weight":78.4,"note":""},{"id":"2026-09-21","date":"2026-09-21","weight":78.3,"note":""},{"id":"2026-09-22","date":"2026-09-22","weight":78.4,"note":""},{"id":"2026-09-23","date":"2026-09-23","weight":78.6,"note":""},{"id":"2026-09-24","date":"2026-09-24","weight":78.7,"note":""},{"id":"2026-09-25","date":"2026-09-25","weight":78.8,"note":""},{"id":"2026-09-26","date":"2026-09-26","weight":78.6,"note":""},{"id":"2026-09-27","date":"2026-09-27","weight":78.8,"note":""},{"id":"2026-09-28","date":"2026-09-28","weight":79,"note":""},{"id":"2026-09-29","date":"2026-09-29","weight":79.1,"note":""},{"id":"2026-09-30","date":"2026-09-30","weight":78.8,"note":""},{"id":"2026-10-01","date":"2026-10-01","weight":78.8,"note":""},{"id":"2026-10-02","date":"2026-10-02","weight":79,"note":""},{"id":"2026-10-03","date":"2026-10-03","weight":79.3,"note":""},{"id":"2026-10-04","date":"2026-10-04","weight":79.6,"note":""},{"id":"2026-10-05","date":"2026-10-05","weight":79.5,"note":""},{"id":"2026-10-06","date":"2026-10-06","weight":79.4,"note":""},{"id":"2026-10-07","date":"2026-10-07","weight":79.2,"note":""},{"id":"2026-10-08","date":"2026-10-08","weight":79.4,"note":""},{"id":"2026-10-09","date":"2026-10-09","weight":79.6,"note":""},{"id":"2026-10-10","date":"2026-10-10","weight":79.9,"note":""},{"id":"2026-10-11","date":"2026-10-11","weight":79.6,"note":""},{"id":"2026-10-13","date":"2026-10-13","weight":79.5,"note":""}];
 </script>
 <script>
 // ===================================================================
@@ -726,6 +768,41 @@ function drawSelectedLabel(px, py) {
   if (t < 1 && !popRaf) popRaf = requestAnimationFrame(() => { popRaf = null; drawChart(); });
 }
 
+function drawYearMarks(W, H, xToPx) {
+  const left = PAD.l, right = W - PAD.r, top = PAD.t, bottom = H - PAD.b;
+  const y0 = new Date(view.xMin).getFullYear(), y1 = new Date(view.xMax).getFullYear();
+  if (y1 - y0 > 60) return;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(left, 0, right - left, bottom); ctx.clip();
+  // dải nền: năm lẻ sáng hơn 1 chút → nhìn xa vẫn thấy từng năm
+  for (let y = y0; y <= y1; y++) {
+    if (y % 2 === 0) continue;
+    const xa = Math.max(left, xToPx(new Date(y, 0, 1).getTime()));
+    const xb = Math.min(right, xToPx(new Date(y + 1, 0, 1).getTime()));
+    if (xb > xa) { ctx.fillStyle = 'rgba(167,180,193,0.045)'; ctx.fillRect(xa, top - 18, xb - xa, bottom - top + 18); }
+  }
+  // vạch đầu năm + nhãn năm
+  ctx.font = `600 13px ${NUM_FONT}`;
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = 'left';
+  let firstMarkX = Infinity;
+  for (let y = y0 + 1; y <= y1; y++) {
+    const x = Math.round(xToPx(new Date(y, 0, 1).getTime())) + 0.5;
+    if (x < left || x > right) continue;
+    firstMarkX = Math.min(firstMarkX, x);
+    ctx.strokeStyle = 'rgba(167,180,193,0.35)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, top - 16); ctx.lineTo(x, bottom); ctx.stroke();
+    ctx.fillStyle = '#8b9bab';
+    ctx.fillText(String(y), x + 4, top - 6);
+  }
+  // nhãn năm đang xem, ghim ở góc trái (ẩn nếu sắp đụng nhãn năm kế tiếp)
+  if (firstMarkX - left > 44) {
+    ctx.fillStyle = '#6f8195';
+    ctx.fillText(String(y0), left + 4, top - 6);
+  }
+  ctx.restore();
+}
+
 function drawChart() {
   const rect = chartWrap.getBoundingClientRect();
   const W = rect.width, H = rect.height;
@@ -744,6 +821,9 @@ function drawChart() {
   const xToPx = (t) => PAD.l + (t - view.xMin) / (view.xMax - view.xMin) * (W - PAD.l - PAD.r);
   const yToPx = (v) => H - PAD.b - (v - yMin) / (yMax - yMin) * (H - PAD.t - PAD.b);
   lastScale = { xToPx, yToPx }; // reused by tap-hit-testing so it matches exactly what was drawn
+
+  // ---- mốc năm: dải nền xen kẽ theo năm + vạch 1/1 kèm nhãn năm ----
+  drawYearMarks(W, H, xToPx);
 
   // ---- grid + y labels (bước chia tròn số) ----
   ctx.font = `500 14px ${NUM_FONT}`;
@@ -918,11 +998,9 @@ const fmtSigned = v => (v > 0.04 ? '+' : v < -0.04 ? '−' : '±') + Math.abs(v)
 const deltaCls = v => (Math.abs(v) < 0.05 ? 'flat' : v > 0 ? 'up' : 'down');
 
 function positionTooltip(px, py) {
-  const bmi = heightCm ? (selected.weight / ((heightCm/100)**2)) : null;
+  // số kg đã hiện to ngay trên điểm, nên bảng info chỉ cần ngày + nút sửa (+ ghi chú nếu có)
   const d = toDate(selected.date);
-  tooltip.querySelector('.w').textContent = `${fmtKg(selected.weight)} kg`;
-  tooltip.querySelector('.d').textContent = `${WD_LONG[d.getDay()]}, ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}` +
-    (bmi ? `  ·  BMI ${bmi.toFixed(1).replace('.', ',')}` : '');
+  tooltip.querySelector('.d').textContent = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
   const noteEl = tooltip.querySelector('.n');
   if (selected.note) { noteEl.textContent = selected.note; noteEl.style.display = 'block'; }
   else noteEl.style.display = 'none';
@@ -1143,10 +1221,38 @@ function zoomAt(anchorPxX, anchorPxY, scaleX, scaleY, rect) {
   }
 }
 
+// ---- trôi theo quán tính sau khi kéo (fling) ----
+const FLING_TAU = 330;          // ms — càng lớn càng trôi xa
+let flingId = null;
+function stopFling() { if (flingId) { cancelAnimationFrame(flingId); flingId = null; } }
+function panVelocity(samples) { // px/ms từ các điểm chạm trong ~100ms cuối
+  const now = performance.now();
+  const s2 = samples.filter(p => now - p.t < 100);
+  if (s2.length < 2) return [0, 0];
+  const a = s2[0], b = s2[s2.length - 1], dt = b.t - a.t;
+  return dt > 0 ? [(b.x - a.x) / dt, (b.y - a.y) / dt] : [0, 0];
+}
+function startFling(vx, vy) {
+  stopFling();
+  if (REDUCED_MOTION || Math.hypot(vx, vy) < 0.15) return;
+  let last = performance.now();
+  const tick = (now) => {
+    const dt = Math.min(40, now - last); last = now;
+    const rect = chartWrap.getBoundingClientRect();
+    panBy(vx * dt, vy * dt, rect);
+    const k = Math.exp(-dt / FLING_TAU);
+    vx *= k; vy *= k;
+    drawChart();
+    flingId = Math.hypot(vx, vy) > 0.02 ? requestAnimationFrame(tick) : null;
+  };
+  flingId = requestAnimationFrame(tick);
+}
+
 const fromTooltip = ev => !!(ev.target && ev.target.closest && ev.target.closest('#tooltip'));
 chartWrap.addEventListener('touchstart', (ev) => {
   if (fromTooltip(ev)) return;
   ev.preventDefault();
+  stopFling();
   const rect = chartWrap.getBoundingClientRect();
   if (ev.touches.length === 1) {
     const x = ev.touches[0].clientX, y = ev.touches[0].clientY;
@@ -1157,7 +1263,8 @@ chartWrap.addEventListener('touchstart', (ev) => {
       touchState = { mode: 'dragzoom', originX: x - rect.left, originY: y - rect.top, baseline: { ...view }, moved: false };
     } else {
       touchState = { mode: 'pan', startX: x, startY: y, lastX: x, lastY: y,
-                     moved: false, startTouchX: x - rect.left, startTouchY: y - rect.top };
+                     moved: false, startTouchX: x - rect.left, startTouchY: y - rect.top,
+                     samples: [{ t: performance.now(), x, y }] };
     }
   } else if (ev.touches.length === 2) {
     pendingTap = null;
@@ -1180,6 +1287,8 @@ chartWrap.addEventListener('touchmove', (ev) => {
     if (Math.abs(x - touchState.startX) > 3 || Math.abs(y - touchState.startY) > 3) touchState.moved = true;
     panBy(dxPx, dyPx, rect);
     touchState.lastX = x; touchState.lastY = y;
+    touchState.samples.push({ t: performance.now(), x, y });
+    if (touchState.samples.length > 8) touchState.samples.shift();
     drawChart();
   } else if (touchState.mode === 'pinch' && ev.touches.length === 2) {
     const xDist = Math.abs(ev.touches[0].clientX - ev.touches[1].clientX);
@@ -1206,6 +1315,10 @@ chartWrap.addEventListener('touchmove', (ev) => {
 }, { passive: false });
 
 chartWrap.addEventListener('touchend', (ev) => {
+  if (touchState && touchState.mode === 'pan' && touchState.moved && ev.touches.length === 0) {
+    const [vx, vy] = panVelocity(touchState.samples);
+    startFling(vx, vy);
+  }
   if (touchState && touchState.mode === 'pan' && !touchState.moved) {
     handleTap(touchState.startTouchX, touchState.startTouchY);
     pendingTap = { time: Date.now(), x: touchState.startX, y: touchState.startY };
@@ -1222,6 +1335,7 @@ let mouseDown = null;
 let pendingClick = null;
 chartWrap.addEventListener('mousedown', (ev) => {
   if (fromTooltip(ev)) return;
+  stopFling();
   const rect = chartWrap.getBoundingClientRect();
   const isSecondClick = pendingClick && (Date.now() - pendingClick.time < DOUBLE_TAP_MS) &&
     Math.hypot(ev.clientX - pendingClick.x, ev.clientY - pendingClick.y) < DOUBLE_TAP_PX;
@@ -1229,7 +1343,8 @@ chartWrap.addEventListener('mousedown', (ev) => {
   if (isSecondClick) {
     mouseDown = { mode: 'dragzoom', originX: ev.clientX - rect.left, originY: ev.clientY - rect.top, baseline: { ...view }, moved: false };
   } else {
-    mouseDown = { mode: 'pan', x: ev.clientX, y: ev.clientY, lastX: ev.clientX, lastY: ev.clientY, moved: false };
+    mouseDown = { mode: 'pan', x: ev.clientX, y: ev.clientY, lastX: ev.clientX, lastY: ev.clientY, moved: false,
+                  samples: [{ t: performance.now(), x: ev.clientX, y: ev.clientY }] };
   }
 });
 window.addEventListener('mousemove', (ev) => {
@@ -1240,6 +1355,8 @@ window.addEventListener('mousemove', (ev) => {
     if (Math.abs(ev.clientX - mouseDown.x) > 3 || Math.abs(ev.clientY - mouseDown.y) > 3) mouseDown.moved = true;
     panBy(dxPx, dyPx, rect);
     mouseDown.lastX = ev.clientX; mouseDown.lastY = ev.clientY;
+    mouseDown.samples.push({ t: performance.now(), x: ev.clientX, y: ev.clientY });
+    if (mouseDown.samples.length > 8) mouseDown.samples.shift();
     if (mouseDown.moved) drawChart();
   } else if (mouseDown.mode === 'dragzoom') {
     const x = ev.clientX - rect.left, y = ev.clientY - rect.top;
@@ -1253,6 +1370,10 @@ window.addEventListener('mousemove', (ev) => {
 });
 window.addEventListener('mouseup', (ev) => {
   const rect = chartWrap.getBoundingClientRect();
+  if (mouseDown && mouseDown.mode === 'pan' && mouseDown.moved) {
+    const [vx, vy] = panVelocity(mouseDown.samples);
+    startFling(vx, vy);
+  }
   if (mouseDown && mouseDown.mode === 'pan' && !mouseDown.moved) {
     handleTap(ev.clientX - rect.left, ev.clientY - rect.top);
     pendingClick = { time: Date.now(), x: mouseDown.x, y: mouseDown.y };
@@ -1345,6 +1466,7 @@ function clearRangeTab() {
   try { localStorage.removeItem(RANGE_KEY); } catch (e) { /* ignore */ }
 }
 function setRange(days, animate) {
+  stopFling();
   const list = sortedEntries();
   if (!list.length) return;
   const DAY = 86400000;
@@ -1693,10 +1815,49 @@ document.getElementById('saveEntryBtn').addEventListener('click', () => {
   upsertEntry({ id: draft.date, date: draft.date, weight, note: draft.note || '' });
   // Giữ nguyên zoom/pan hiện tại thay vì reset về toàn cảnh mỗi lần thêm số đo mới
   selected = entries.find(e => e.date === draft.date) || null;
+  const fromPlus = !draft.origDate;
   closeModal();
   showScreen('chart');
   drawChart();
+  // nhập mới bằng nút + → báo tăng/giảm so với lần cân trước (đợi bảng nhập đóng xong)
+  if (fromPlus) setTimeout(() => showResult(draft.date, weight), REDUCED_MOTION ? 0 : 380);
 });
+
+// ---- bảng kết quả: trượt lên có nhún, chạm bất kỳ đâu để trượt xuống ----
+const resultSheet = document.getElementById('resultSheet');
+const resultCatcher = document.getElementById('resultCatcher');
+const RESULT_ICONS = {
+  good: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M5 13l7 7 7-7"/></svg>',
+  bad:  '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V4M5 11l7-7 7 7"/></svg>',
+  same: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M5 9h14M5 15h14"/></svg>',
+};
+let resultHideTimer = null;
+function showResult(date, weight) {
+  const prev = sortedEntries().filter(e => e.date < date).pop();
+  if (!prev) return; // lần cân đầu tiên — chưa có gì để so
+  const diff = Math.round((weight - prev.weight) * 10) / 10;
+  const kind = diff < 0 ? 'good' : diff > 0 ? 'bad' : 'same';
+  const pd = toDate(prev.date);
+  document.getElementById('resultIcon').innerHTML = RESULT_ICONS[kind];
+  document.getElementById('resultTitle').innerHTML =
+    kind === 'good' ? `Chúc mừng! Bạn đã giảm <b>${fmtKg(-diff)} kg</b>`
+    : kind === 'bad' ? `Xin chia buồn, bạn đã tăng <b>${fmtKg(diff)} kg</b>`
+    : 'Cân nặng của bạn không thay đổi';
+  document.getElementById('resultSub').textContent =
+    `So với lần cân trước (${pd.getDate()}/${pd.getMonth()+1}: ${fmtKg(prev.weight)} kg)`;
+  clearTimeout(resultHideTimer);
+  resultSheet.className = '';
+  void resultSheet.offsetWidth; // chạy lại hiệu ứng nếu bảng đang hiện
+  resultSheet.className = `${kind} show`;
+  resultCatcher.classList.add('on');
+}
+function hideResult() {
+  if (!resultSheet.classList.contains('show')) return;
+  resultCatcher.classList.remove('on');
+  resultSheet.classList.replace('show', 'hide');
+  resultHideTimer = setTimeout(() => { resultSheet.className = ''; }, 500);
+}
+resultCatcher.addEventListener('pointerdown', (ev) => { ev.preventDefault(); hideResult(); });
 
 // ---- date picker: tapping the pill opens the native calendar directly (no intermediate sheet) ----
 const dateSheetInput = document.getElementById('dateSheetInput');

@@ -297,6 +297,41 @@ function drawSelectedLabel(px, py) {
   if (t < 1 && !popRaf) popRaf = requestAnimationFrame(() => { popRaf = null; drawChart(); });
 }
 
+function drawYearMarks(W, H, xToPx) {
+  const left = PAD.l, right = W - PAD.r, top = PAD.t, bottom = H - PAD.b;
+  const y0 = new Date(view.xMin).getFullYear(), y1 = new Date(view.xMax).getFullYear();
+  if (y1 - y0 > 60) return;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(left, 0, right - left, bottom); ctx.clip();
+  // dải nền: năm lẻ sáng hơn 1 chút → nhìn xa vẫn thấy từng năm
+  for (let y = y0; y <= y1; y++) {
+    if (y % 2 === 0) continue;
+    const xa = Math.max(left, xToPx(new Date(y, 0, 1).getTime()));
+    const xb = Math.min(right, xToPx(new Date(y + 1, 0, 1).getTime()));
+    if (xb > xa) { ctx.fillStyle = 'rgba(167,180,193,0.045)'; ctx.fillRect(xa, top - 18, xb - xa, bottom - top + 18); }
+  }
+  // vạch đầu năm + nhãn năm
+  ctx.font = `600 13px ${NUM_FONT}`;
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = 'left';
+  let firstMarkX = Infinity;
+  for (let y = y0 + 1; y <= y1; y++) {
+    const x = Math.round(xToPx(new Date(y, 0, 1).getTime())) + 0.5;
+    if (x < left || x > right) continue;
+    firstMarkX = Math.min(firstMarkX, x);
+    ctx.strokeStyle = 'rgba(167,180,193,0.35)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, top - 16); ctx.lineTo(x, bottom); ctx.stroke();
+    ctx.fillStyle = '#8b9bab';
+    ctx.fillText(String(y), x + 4, top - 6);
+  }
+  // nhãn năm đang xem, ghim ở góc trái (ẩn nếu sắp đụng nhãn năm kế tiếp)
+  if (firstMarkX - left > 44) {
+    ctx.fillStyle = '#6f8195';
+    ctx.fillText(String(y0), left + 4, top - 6);
+  }
+  ctx.restore();
+}
+
 function drawChart() {
   const rect = chartWrap.getBoundingClientRect();
   const W = rect.width, H = rect.height;
@@ -315,6 +350,9 @@ function drawChart() {
   const xToPx = (t) => PAD.l + (t - view.xMin) / (view.xMax - view.xMin) * (W - PAD.l - PAD.r);
   const yToPx = (v) => H - PAD.b - (v - yMin) / (yMax - yMin) * (H - PAD.t - PAD.b);
   lastScale = { xToPx, yToPx }; // reused by tap-hit-testing so it matches exactly what was drawn
+
+  // ---- mốc năm: dải nền xen kẽ theo năm + vạch 1/1 kèm nhãn năm ----
+  drawYearMarks(W, H, xToPx);
 
   // ---- grid + y labels (bước chia tròn số) ----
   ctx.font = `500 14px ${NUM_FONT}`;
@@ -489,11 +527,9 @@ const fmtSigned = v => (v > 0.04 ? '+' : v < -0.04 ? '−' : '±') + Math.abs(v)
 const deltaCls = v => (Math.abs(v) < 0.05 ? 'flat' : v > 0 ? 'up' : 'down');
 
 function positionTooltip(px, py) {
-  const bmi = heightCm ? (selected.weight / ((heightCm/100)**2)) : null;
+  // số kg đã hiện to ngay trên điểm, nên bảng info chỉ cần ngày + nút sửa (+ ghi chú nếu có)
   const d = toDate(selected.date);
-  tooltip.querySelector('.w').textContent = `${fmtKg(selected.weight)} kg`;
-  tooltip.querySelector('.d').textContent = `${WD_LONG[d.getDay()]}, ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}` +
-    (bmi ? `  ·  BMI ${bmi.toFixed(1).replace('.', ',')}` : '');
+  tooltip.querySelector('.d').textContent = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
   const noteEl = tooltip.querySelector('.n');
   if (selected.note) { noteEl.textContent = selected.note; noteEl.style.display = 'block'; }
   else noteEl.style.display = 'none';
@@ -714,10 +750,38 @@ function zoomAt(anchorPxX, anchorPxY, scaleX, scaleY, rect) {
   }
 }
 
+// ---- trôi theo quán tính sau khi kéo (fling) ----
+const FLING_TAU = 330;          // ms — càng lớn càng trôi xa
+let flingId = null;
+function stopFling() { if (flingId) { cancelAnimationFrame(flingId); flingId = null; } }
+function panVelocity(samples) { // px/ms từ các điểm chạm trong ~100ms cuối
+  const now = performance.now();
+  const s2 = samples.filter(p => now - p.t < 100);
+  if (s2.length < 2) return [0, 0];
+  const a = s2[0], b = s2[s2.length - 1], dt = b.t - a.t;
+  return dt > 0 ? [(b.x - a.x) / dt, (b.y - a.y) / dt] : [0, 0];
+}
+function startFling(vx, vy) {
+  stopFling();
+  if (REDUCED_MOTION || Math.hypot(vx, vy) < 0.15) return;
+  let last = performance.now();
+  const tick = (now) => {
+    const dt = Math.min(40, now - last); last = now;
+    const rect = chartWrap.getBoundingClientRect();
+    panBy(vx * dt, vy * dt, rect);
+    const k = Math.exp(-dt / FLING_TAU);
+    vx *= k; vy *= k;
+    drawChart();
+    flingId = Math.hypot(vx, vy) > 0.02 ? requestAnimationFrame(tick) : null;
+  };
+  flingId = requestAnimationFrame(tick);
+}
+
 const fromTooltip = ev => !!(ev.target && ev.target.closest && ev.target.closest('#tooltip'));
 chartWrap.addEventListener('touchstart', (ev) => {
   if (fromTooltip(ev)) return;
   ev.preventDefault();
+  stopFling();
   const rect = chartWrap.getBoundingClientRect();
   if (ev.touches.length === 1) {
     const x = ev.touches[0].clientX, y = ev.touches[0].clientY;
@@ -728,7 +792,8 @@ chartWrap.addEventListener('touchstart', (ev) => {
       touchState = { mode: 'dragzoom', originX: x - rect.left, originY: y - rect.top, baseline: { ...view }, moved: false };
     } else {
       touchState = { mode: 'pan', startX: x, startY: y, lastX: x, lastY: y,
-                     moved: false, startTouchX: x - rect.left, startTouchY: y - rect.top };
+                     moved: false, startTouchX: x - rect.left, startTouchY: y - rect.top,
+                     samples: [{ t: performance.now(), x, y }] };
     }
   } else if (ev.touches.length === 2) {
     pendingTap = null;
@@ -751,6 +816,8 @@ chartWrap.addEventListener('touchmove', (ev) => {
     if (Math.abs(x - touchState.startX) > 3 || Math.abs(y - touchState.startY) > 3) touchState.moved = true;
     panBy(dxPx, dyPx, rect);
     touchState.lastX = x; touchState.lastY = y;
+    touchState.samples.push({ t: performance.now(), x, y });
+    if (touchState.samples.length > 8) touchState.samples.shift();
     drawChart();
   } else if (touchState.mode === 'pinch' && ev.touches.length === 2) {
     const xDist = Math.abs(ev.touches[0].clientX - ev.touches[1].clientX);
@@ -777,6 +844,10 @@ chartWrap.addEventListener('touchmove', (ev) => {
 }, { passive: false });
 
 chartWrap.addEventListener('touchend', (ev) => {
+  if (touchState && touchState.mode === 'pan' && touchState.moved && ev.touches.length === 0) {
+    const [vx, vy] = panVelocity(touchState.samples);
+    startFling(vx, vy);
+  }
   if (touchState && touchState.mode === 'pan' && !touchState.moved) {
     handleTap(touchState.startTouchX, touchState.startTouchY);
     pendingTap = { time: Date.now(), x: touchState.startX, y: touchState.startY };
@@ -793,6 +864,7 @@ let mouseDown = null;
 let pendingClick = null;
 chartWrap.addEventListener('mousedown', (ev) => {
   if (fromTooltip(ev)) return;
+  stopFling();
   const rect = chartWrap.getBoundingClientRect();
   const isSecondClick = pendingClick && (Date.now() - pendingClick.time < DOUBLE_TAP_MS) &&
     Math.hypot(ev.clientX - pendingClick.x, ev.clientY - pendingClick.y) < DOUBLE_TAP_PX;
@@ -800,7 +872,8 @@ chartWrap.addEventListener('mousedown', (ev) => {
   if (isSecondClick) {
     mouseDown = { mode: 'dragzoom', originX: ev.clientX - rect.left, originY: ev.clientY - rect.top, baseline: { ...view }, moved: false };
   } else {
-    mouseDown = { mode: 'pan', x: ev.clientX, y: ev.clientY, lastX: ev.clientX, lastY: ev.clientY, moved: false };
+    mouseDown = { mode: 'pan', x: ev.clientX, y: ev.clientY, lastX: ev.clientX, lastY: ev.clientY, moved: false,
+                  samples: [{ t: performance.now(), x: ev.clientX, y: ev.clientY }] };
   }
 });
 window.addEventListener('mousemove', (ev) => {
@@ -811,6 +884,8 @@ window.addEventListener('mousemove', (ev) => {
     if (Math.abs(ev.clientX - mouseDown.x) > 3 || Math.abs(ev.clientY - mouseDown.y) > 3) mouseDown.moved = true;
     panBy(dxPx, dyPx, rect);
     mouseDown.lastX = ev.clientX; mouseDown.lastY = ev.clientY;
+    mouseDown.samples.push({ t: performance.now(), x: ev.clientX, y: ev.clientY });
+    if (mouseDown.samples.length > 8) mouseDown.samples.shift();
     if (mouseDown.moved) drawChart();
   } else if (mouseDown.mode === 'dragzoom') {
     const x = ev.clientX - rect.left, y = ev.clientY - rect.top;
@@ -824,6 +899,10 @@ window.addEventListener('mousemove', (ev) => {
 });
 window.addEventListener('mouseup', (ev) => {
   const rect = chartWrap.getBoundingClientRect();
+  if (mouseDown && mouseDown.mode === 'pan' && mouseDown.moved) {
+    const [vx, vy] = panVelocity(mouseDown.samples);
+    startFling(vx, vy);
+  }
   if (mouseDown && mouseDown.mode === 'pan' && !mouseDown.moved) {
     handleTap(ev.clientX - rect.left, ev.clientY - rect.top);
     pendingClick = { time: Date.now(), x: mouseDown.x, y: mouseDown.y };
@@ -916,6 +995,7 @@ function clearRangeTab() {
   try { localStorage.removeItem(RANGE_KEY); } catch (e) { /* ignore */ }
 }
 function setRange(days, animate) {
+  stopFling();
   const list = sortedEntries();
   if (!list.length) return;
   const DAY = 86400000;
@@ -1264,10 +1344,49 @@ document.getElementById('saveEntryBtn').addEventListener('click', () => {
   upsertEntry({ id: draft.date, date: draft.date, weight, note: draft.note || '' });
   // Giữ nguyên zoom/pan hiện tại thay vì reset về toàn cảnh mỗi lần thêm số đo mới
   selected = entries.find(e => e.date === draft.date) || null;
+  const fromPlus = !draft.origDate;
   closeModal();
   showScreen('chart');
   drawChart();
+  // nhập mới bằng nút + → báo tăng/giảm so với lần cân trước (đợi bảng nhập đóng xong)
+  if (fromPlus) setTimeout(() => showResult(draft.date, weight), REDUCED_MOTION ? 0 : 380);
 });
+
+// ---- bảng kết quả: trượt lên có nhún, chạm bất kỳ đâu để trượt xuống ----
+const resultSheet = document.getElementById('resultSheet');
+const resultCatcher = document.getElementById('resultCatcher');
+const RESULT_ICONS = {
+  good: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M5 13l7 7 7-7"/></svg>',
+  bad:  '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V4M5 11l7-7 7 7"/></svg>',
+  same: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M5 9h14M5 15h14"/></svg>',
+};
+let resultHideTimer = null;
+function showResult(date, weight) {
+  const prev = sortedEntries().filter(e => e.date < date).pop();
+  if (!prev) return; // lần cân đầu tiên — chưa có gì để so
+  const diff = Math.round((weight - prev.weight) * 10) / 10;
+  const kind = diff < 0 ? 'good' : diff > 0 ? 'bad' : 'same';
+  const pd = toDate(prev.date);
+  document.getElementById('resultIcon').innerHTML = RESULT_ICONS[kind];
+  document.getElementById('resultTitle').innerHTML =
+    kind === 'good' ? `Chúc mừng! Bạn đã giảm <b>${fmtKg(-diff)} kg</b>`
+    : kind === 'bad' ? `Xin chia buồn, bạn đã tăng <b>${fmtKg(diff)} kg</b>`
+    : 'Cân nặng của bạn không thay đổi';
+  document.getElementById('resultSub').textContent =
+    `So với lần cân trước (${pd.getDate()}/${pd.getMonth()+1}: ${fmtKg(prev.weight)} kg)`;
+  clearTimeout(resultHideTimer);
+  resultSheet.className = '';
+  void resultSheet.offsetWidth; // chạy lại hiệu ứng nếu bảng đang hiện
+  resultSheet.className = `${kind} show`;
+  resultCatcher.classList.add('on');
+}
+function hideResult() {
+  if (!resultSheet.classList.contains('show')) return;
+  resultCatcher.classList.remove('on');
+  resultSheet.classList.replace('show', 'hide');
+  resultHideTimer = setTimeout(() => { resultSheet.className = ''; }, 500);
+}
+resultCatcher.addEventListener('pointerdown', (ev) => { ev.preventDefault(); hideResult(); });
 
 // ---- date picker: tapping the pill opens the native calendar directly (no intermediate sheet) ----
 const dateSheetInput = document.getElementById('dateSheetInput');

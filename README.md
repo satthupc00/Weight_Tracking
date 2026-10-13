@@ -11,7 +11,12 @@ Capacitor (web app đóng gói native) — cùng cách làm với app "Money Tra
   vẫn pinch zoom, kéo, chạm đúp rồi kéo để zoom.
 - Thước cân **kéo được**: giữ và kéo trái/phải để dò số, kim đỏ đung đưa theo tốc độ kéo, dừng thì nảy nhẹ rồi đứng;
   buông tay thì thước tự quay về số cân mới nhất.
-- Mốc có ghi chú có dấu **!** vàng cạnh số; chạm 1 mốc thì số của mốc đó nhún 1 cái rồi to lên.
+- Mốc có ghi chú có dấu **!** vàng cạnh số; chạm 1 mốc thì số của mốc đó nhún 1 cái rồi to lên, bảng info chỉ ghi
+  ngày + nút sửa (ghi chú màu vàng).
+- Kéo biểu đồ rồi buông tay → biểu đồ trôi tiếp theo quán tính rồi dừng dần.
+- **Mốc năm**: mỗi năm một dải nền sáng/tối xen kẽ + vạch đầu năm kèm nhãn "2025", "2026"…; năm đang xem ghim ở góc trái.
+- Nhập cân bằng nút **+** → bảng trượt lên báo đã giảm/tăng bao nhiêu kg (hoặc không đổi) so với lần cân trước;
+  chạm bất kỳ đâu để bảng trượt xuống.
 - Mọi nút có hiệu ứng lún/nảy khi bấm; bấm **+** thì nút ✓ và ↩ tách ra 2 bên, lưu/huỷ thì 2 nút gộp lại.
 - Bánh xe nhập số xoay kiểu trống 3D, vuốt mạnh thì trôi theo quán tính rồi trượt êm vào đúng số gần nhất.
 - Biểu đồ: đường xanh có nền mờ, chấm **thứ Hai màu đỏ**, đường chấm xanh = mục tiêu, đường chấm xám = dự đoán xu hướng

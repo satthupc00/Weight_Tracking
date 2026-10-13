@@ -48,8 +48,9 @@
         <div id="chartWrap">
           <canvas id="chartCanvas"></canvas>
           <div id="tooltip">
-            <div class="w"></div><div class="d"></div><div class="n"></div>
-            <button class="edit" id="tooltipEditBtn" title="Sửa" aria-label="Sửa lần cân này"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+            <div class="row"><div class="d"></div>
+            <button class="edit" id="tooltipEditBtn" title="Sửa" aria-label="Sửa lần cân này"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button></div>
+            <div class="n"></div>
           </div>
           <div id="emptyState"><div>Chưa có số cân nào.</div><div>Bấm nút + để nhập lần cân đầu tiên.</div></div>
         </div>
@@ -97,6 +98,13 @@
   </div>
 
   <div id="credit">Created by Mondiro</div>
+</div>
+
+<!-- ===================== KẾT QUẢ SAU KHI CÂN (trượt lên, chạm để tắt) ===================== -->
+<div id="resultCatcher"></div>
+<div id="resultSheet" role="status" aria-live="polite">
+  <div class="ricon" id="resultIcon"></div>
+  <div class="rtext"><div class="rtitle" id="resultTitle"></div><div class="rsub" id="resultSub"></div></div>
 </div>
 
 <!-- ===================== ADD/EDIT ENTRY MODAL (dùng chung cho nút + và nút sửa) ===================== -->
