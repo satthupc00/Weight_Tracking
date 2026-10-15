@@ -20,6 +20,28 @@ function loadEntries() {
 }
 function saveEntries(entries) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  if (window.__wtOnDataChanged) window.__wtOnDataChanged(); // đồng bộ Firebase (sync.js)
+}
+// Ngày đã bị xoá (để máy khác cũng xoá khi đồng bộ): { 'YYYY-MM-DD': thời điểm xoá (ms) }
+const DELETED_KEY = 'wt_deleted_v1';
+function loadDeleted() { try { return JSON.parse(localStorage.getItem(DELETED_KEY) || '{}') || {}; } catch (e) { return {}; } }
+function saveDeleted(map) { try { localStorage.setItem(DELETED_KEY, JSON.stringify(map)); } catch (e) { /* ignore */ } }
+function markDeleted(dates) {
+  const m = loadDeleted(), now = Date.now();
+  dates.forEach(d => { m[d] = now; });
+  saveDeleted(m);
+}
+function unmarkDeleted(dates) {
+  const m = loadDeleted();
+  let changed = false;
+  dates.forEach(d => { if (d in m) { delete m[d]; changed = true; } });
+  if (changed) saveDeleted(m);
+}
+// Mục tiêu + chiều cao: thời điểm sửa gần nhất (để đồng bộ)
+const SETTINGS_TS_KEY = 'wt_settings_ts_v1';
+function touchSettings() {
+  try { localStorage.setItem(SETTINGS_TS_KEY, String(Date.now())); } catch (e) { /* ignore */ }
+  if (window.__wtOnDataChanged) window.__wtOnDataChanged();
 }
 function loadGoal() {
   const v = localStorage.getItem(GOAL_KEY);
@@ -67,6 +89,8 @@ function sortedEntries() {
   return [...entries].sort((a, b) => a.date.localeCompare(b.date));
 }
 function upsertEntry(entry) {
+  entry = { ...entry, updatedAt: Date.now() }; // thời điểm sửa → bản mới nhất thắng khi đồng bộ
+  unmarkDeleted([entry.date]);
   const idx = entries.findIndex(e => e.date === entry.date);
   if (idx >= 0) entries[idx] = { ...entries[idx], ...entry };
   else entries.push(entry);
@@ -1056,16 +1080,19 @@ heightInput.value = heightCm !== null ? heightCm : '';
 goalInput.addEventListener('change', () => {
   goalWeight = goalInput.value === '' ? null : parseFloat(goalInput.value);
   saveGoal(goalWeight);
+  touchSettings();
   drawChart();
 });
 heightInput.addEventListener('change', () => {
   heightCm = heightInput.value === '' ? null : parseFloat(heightInput.value);
   saveHeight(heightCm);
+  touchSettings();
   drawChart();
 });
 
 document.getElementById('clearBtn').addEventListener('click', () => {
   if (confirm('Xoá toàn bộ dữ liệu cân nặng đã nhập? Không thể hoàn tác.')) {
+    markDeleted(entries.map(e => e.date)); // đã đăng nhập Firebase thì máy khác cũng xoá theo
     entries = [];
     saveEntries(entries);
     selected = null;
@@ -1141,7 +1168,9 @@ csvFileInput.addEventListener('change', () => {
       parsed = parseCsv(text, 'lbs');
     }
     const byDate = new Map(entries.map(e => [e.date, e]));
-    parsed.forEach(e => byDate.set(e.date, e));
+    const now = Date.now();
+    parsed.forEach(e => byDate.set(e.date, { ...e, updatedAt: now }));
+    unmarkDeleted(parsed.map(e => e.date));
     entries = Array.from(byDate.values());
     saveEntries(entries);
     resetView();
@@ -1340,7 +1369,10 @@ document.getElementById('saveEntryBtn').addEventListener('click', () => {
   const weight = (draft.intPart||0) + (draft.decPart||0)/10;
   if (!weight || weight <= 0) { alert('Vui lòng chọn cân nặng.'); return; }
   // sửa một lần cân mà đổi sang ngày khác → bỏ bản ghi ở ngày cũ
-  if (draft.origDate && draft.origDate !== draft.date) entries = entries.filter(e => e.date !== draft.origDate);
+  if (draft.origDate && draft.origDate !== draft.date) {
+    entries = entries.filter(e => e.date !== draft.origDate);
+    markDeleted([draft.origDate]);
+  }
   upsertEntry({ id: draft.date, date: draft.date, weight, note: draft.note || '' });
   // Giữ nguyên zoom/pan hiện tại thay vì reset về toàn cảnh mỗi lần thêm số đo mới
   selected = entries.find(e => e.date === draft.date) || null;

@@ -20,6 +20,9 @@ App Android (Capacitor, HTML/CSS/JS thuần trong `www/`) của Mondiro, tối �
 - Không đổi `appId` `com.mondiro.weighttracking`.
 
 ## Kỹ thuật
+- Đồng bộ Firebase: `www/sync.js` (REST: Auth email/mật khẩu + Firestore `users/{uid}/entries/{date}`), cấu hình ở
+  `www/firebase-config.js` (apiKey + projectId công khai được; bảo vệ bằng Rules trong README). Gộp theo `updatedAt`,
+  ngày bị xoá lưu ở localStorage `wt_deleted_v1`. Kiểm thử bằng Firebase giả lập (route các host *.googleapis.com trong Playwright).
 - Tự cập nhật: `www/app.js` hỏi `https://api.github.com/repos/satthupc00/Weight_Tracking/releases/latest`, tag `build-<versionCode>`;
   `versionCode` = `GITHUB_RUN_NUMBER`. Workflow chỉ giữ release + artifact mới nhất.
 - Kiểm tra nhanh: `node --check www/app.js`, `node build_preview.js`, rồi mở `dist/preview.html` bằng Playwright

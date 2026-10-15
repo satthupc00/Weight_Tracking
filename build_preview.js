@@ -27,7 +27,9 @@ const out = html
   .replace('<link rel="stylesheet" href="fonts.css">', () => `<style>\n${fontsCss}\n</style>`)
   .replace('<link rel="stylesheet" href="styles.css">', () => `<style>\n${css}\n</style>`)
   .replace('<script src="seed-data.js"></script>', () => `<script>\n${seed}\n</script>`)
-  .replace('<script src="app.js"></script>', () => `<script>\n${js}\n</script>`);
+  .replace('<script src="app.js"></script>', () => `<script>\n${js}\n</script>`)
+  .replace('<script src="firebase-config.js"></script>', () => `<script>\n${fs.readFileSync('www/firebase-config.js', 'utf8')}\n</script>`)
+  .replace('<script src="sync.js"></script>', () => `<script>\n${fs.readFileSync('www/sync.js', 'utf8')}\n</script>`);
 
 fs.writeFileSync('dist/preview.html', out);
 console.log('wrote dist/preview.html, bytes:', out.length);

@@ -98,3 +98,32 @@ Các bản app ≤ 1.0.27 vẫn hỏi repo cũ. Vì vậy bản đầu tiên sau
 - **Đừng xoá/đổi file `android/app/mondiro-release.keystore`** — mất nó thì các máy không cập nhật đè được nữa.
 - Lần đầu bấm Cập nhật, Android sẽ hỏi cho phép app "Cài ứng dụng không rõ nguồn gốc" → bật lên 1 lần.
 - Nội dung ghi chú bản cập nhật = nội dung commit message.
+
+## Đồng bộ Firebase (nhiều máy dùng chung dữ liệu)
+Dữ liệu vẫn nằm trên máy là chính; khi có mạng và đã đăng nhập, app tự đồng bộ lên Firebase (Firestore) lúc mở app,
+lúc quay lại app và vài giây sau mỗi lần thêm/sửa/xoá. Cùng 1 ngày mà 2 máy sửa khác nhau → bản sửa sau cùng thắng.
+Icon đám mây cạnh ngày trên thanh tiêu đề: xám = chưa bật, xanh = đã đồng bộ, vàng nhấp nháy = đang đồng bộ, đỏ = lỗi.
+
+### Cài 1 lần (Firebase console, làm được trên điện thoại)
+1. https://console.firebase.google.com → **Create a project** → tên `Weight Tracking` → tắt Google Analytics → Create.
+2. **Build → Authentication → Get started → Email/Password** → bật **Enable** (không cần "Email link") → Save.
+3. **Build → Firestore Database → Create database** → vị trí `asia-southeast1 (Singapore)` → **Start in production mode** → Create.
+   Mở tab **Rules**, thay toàn bộ bằng đoạn dưới rồi bấm **Publish**:
+   ```
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /users/{uid}/{document=**} {
+         allow read, write: if request.auth != null && request.auth.uid == uid;
+       }
+     }
+   }
+   ```
+4. Bánh răng **Project settings → General → Your apps → biểu tượng `</>` (Web)** → đặt tên → Register app.
+   Copy 2 giá trị **apiKey** và **projectId** → điền vào `www/firebase-config.js` (hoặc gửi cho Claude điền giúp).
+5. Mở app → Cài đặt → Đồng bộ Firebase → **Tạo tài khoản** (máy đầu tiên) / **Đăng nhập** (các máy sau).
+6. (Nên làm) Sau khi đã tạo tài khoản: Authentication → Settings → User actions → bỏ tick **Enable create (sign-up)**
+   để người khác không tạo được tài khoản trong dự án của bạn.
+
+apiKey/projectId không phải mật khẩu — để công khai được; dữ liệu được bảo vệ bởi Rules ở bước 3 (mỗi tài khoản chỉ đọc/ghi phần của mình).
+Gói miễn phí (Spark) của Firebase dư dùng cho app này.

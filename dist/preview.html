@@ -191,6 +191,26 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
 .rowbtn .arrow{color:var(--text-dim);}
 .section-title{font-size:13px; font-weight:600; color:var(--text-2); margin:22px 4px 10px;}
 #csvFileInput{display:none;}
+.field input[type=email], .field input[type=password]{
+  width:100%; background:transparent; border:none; color:var(--text); font-size:16px; outline:none; padding:2px 0; font-family:inherit;
+}
+.field input::placeholder{color:var(--text-dim); opacity:.6;}
+.sync-btns{display:flex; gap:10px;}
+.sync-btns .rowbtn{justify-content:center;}
+.rowbtn.primary{background:var(--teal); color:#0b2a26; font-weight:600;}
+.linkbtn{background:none; border:none; color:var(--teal); font-size:13px; padding:2px 4px 10px;}
+.sync-note{font-size:12.5px; color:var(--text-dim); line-height:1.5; padding:0 4px 6px;}
+.sync-note.err, .sync-status.error{color:var(--up);}
+.sync-email{font-size:16px; color:var(--text); font-weight:500;}
+.sync-status{font-size:12.5px; color:var(--text-dim); margin-top:4px;}
+/* icon đám mây trên thanh tiêu đề: xám = chưa bật, xanh = đã đồng bộ, vàng nhấp nháy = đang đồng bộ, đỏ = lỗi */
+.sync-ic{width:34px; height:34px; margin-left:4px; border-radius:10px; border:none; background:none; display:grid; place-items:center; color:var(--text-dim); padding:0;}
+.sync-ic.off{opacity:.35;}
+.sync-ic.idle{color:var(--teal);}
+.sync-ic.syncing{color:#F2B84B; animation:syncPulse 1s ease-in-out infinite;}
+.sync-ic.error{color:var(--up);}
+.sync-ic.offline{color:var(--text-dim);}
+@keyframes syncPulse{50%{opacity:.35;}}
 
 /* ---------- bottom nav ---------- */
 #bottomNav{
@@ -316,6 +336,7 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
   #entryModal, #entryModal .roundbtn{animation:none !important;}
   #resultSheet.show{animation:none !important; transform:translate(-50%,0);}
   #resultSheet.hide{animation:none !important; visibility:hidden;}
+  .sync-ic.syncing{animation:none !important;}
 }
 
 </style>
@@ -333,6 +354,7 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
     <div class="name" id="topTitle">Weight Tracking</div>
     <div class="grow"></div>
     <div class="date" id="todayLabel"></div>
+    <button class="sync-ic off" id="syncIcon" aria-label="Trạng thái đồng bộ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H8a5 5 0 1 1 1.2-9.86A6 6 0 0 1 20.5 12a3.5 3.5 0 0 1-3 7z"/></svg></button>
   </div>
 
   <!-- ===================== CHART SCREEN ===================== -->
@@ -394,6 +416,9 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
       <button class="rowbtn" id="exportBtn"><span>Xuất file CSV</span><span class="arrow">⇢</span></button>
       <button class="rowbtn" id="importBtn"><span>Nhập file CSV</span><span class="arrow">⇢</span></button>
       <input type="file" id="csvFileInput" accept=".csv,text/csv,text/plain">
+
+      <div class="section-title">Đồng bộ Firebase</div>
+      <div id="syncPanel"></div>
 
       <div class="section-title">Cập nhật</div>
       <button class="rowbtn" id="checkUpdateBtn"><span>Kiểm tra bản mới</span><span class="arrow" id="appVersionLabel">⇢</span></button>
@@ -466,7 +491,17 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
 </div>
 
 <script>
-window.__WT_SEED_ENTRIES__ = [{"id":"2026-02-15","date":"2026-02-15","weight":77.9,"note":""},{"id":"2026-02-16","date":"2026-02-16","weight":78,"note":""},{"id":"2026-02-17","date":"2026-02-17","weight":78.3,"note":""},{"id":"2026-02-18","date":"2026-02-18","weight":78.4,"note":""},{"id":"2026-02-19","date":"2026-02-19","weight":78.3,"note":""},{"id":"2026-02-20","date":"2026-02-20","weight":78.1,"note":""},{"id":"2026-02-21","date":"2026-02-21","weight":78.3,"note":""},{"id":"2026-02-22","date":"2026-02-22","weight":78.5,"note":""},{"id":"2026-02-23","date":"2026-02-23","weight":78.4,"note":""},{"id":"2026-02-24","date":"2026-02-24","weight":78.4,"note":""},{"id":"2026-02-25","date":"2026-02-25","weight":78.2,"note":""},{"id":"2026-02-26","date":"2026-02-26","weight":78.2,"note":""},{"id":"2026-02-27","date":"2026-02-27","weight":78.2,"note":""},{"id":"2026-02-28","date":"2026-02-28","weight":78.1,"note":""},{"id":"2026-03-01","date":"2026-03-01","weight":78,"note":""},{"id":"2026-03-02","date":"2026-03-02","weight":78.2,"note":""},{"id":"2026-03-03","date":"2026-03-03","weight":78,"note":""},{"id":"2026-03-04","date":"2026-03-04","weight":78.1,"note":""},{"id":"2026-03-05","date":"2026-03-05","weight":78.1,"note":""},{"id":"2026-03-06","date":"2026-03-06","weight":78,"note":"ghi chú mẫu"},{"id":"2026-03-07","date":"2026-03-07","weight":77.8,"note":""},{"id":"2026-03-09","date":"2026-03-09","weight":77.7,"note":""},{"id":"2026-03-10","date":"2026-03-10","weight":77.9,"note":""},{"id":"2026-03-11","date":"2026-03-11","weight":78.1,"note":""},{"id":"2026-03-12","date":"2026-03-12","weight":77.9,"note":""},{"id":"2026-03-13","date":"2026-03-13","weight":77.9,"note":""},{"id":"2026-03-14","date":"2026-03-14","weight":77.9,"note":""},{"id":"2026-03-15","date":"2026-03-15","weight":77.9,"note":""},{"id":"2026-03-16","date":"2026-03-16","weight":77.7,"note":""},{"id":"2026-03-17","date":"2026-03-17","weight":77.6,"note":""},{"id":"2026-03-18","date":"2026-03-18","weight":77.5,"note":""},{"id":"2026-03-19","date":"2026-03-19","weight":77.5,"note":""},{"id":"2026-03-20","date":"2026-03-20","weight":77.6,"note":""},{"id":"2026-03-21","date":"2026-03-21","weight":77.8,"note":""},{"id":"2026-03-22","date":"2026-03-22","weight":77.6,"note":""},{"id":"2026-03-23","date":"2026-03-23","weight":77.8,"note":""},{"id":"2026-03-24","date":"2026-03-24","weight":77.6,"note":""},{"id":"2026-03-25","date":"2026-03-25","weight":77.6,"note":"ghi chú mẫu"},{"id":"2026-03-26","date":"2026-03-26","weight":77.7,"note":""},{"id":"2026-03-27","date":"2026-03-27","weight":78,"note":""},{"id":"2026-03-28","date":"2026-03-28","weight":77.9,"note":"ghi chú mẫu"},{"id":"2026-03-29","date":"2026-03-29","weight":78,"note":""},{"id":"2026-03-30","date":"2026-03-30","weight":78.1,"note":""},{"id":"2026-03-31","date":"2026-03-31","weight":78.4,"note":""},{"id":"2026-04-02","date":"2026-04-02","weight":78.2,"note":""},{"id":"2026-04-03","date":"2026-04-03","weight":78.1,"note":""},{"id":"2026-04-04","date":"2026-04-04","weight":78.1,"note":""},{"id":"2026-04-05","date":"2026-04-05","weight":77.9,"note":""},{"id":"2026-04-06","date":"2026-04-06","weight":78,"note":""},{"id":"2026-04-07","date":"2026-04-07","weight":78.2,"note":""},{"id":"2026-04-08","date":"2026-04-08","weight":78.2,"note":""},{"id":"2026-04-09","date":"2026-04-09","weight":78.1,"note":"ghi chú mẫu"},{"id":"2026-04-10","date":"2026-04-10","weight":78.1,"note":""},{"id":"2026-04-14","date":"2026-04-14","weight":78.2,"note":""},{"id":"2026-04-15","date":"2026-04-15","weight":78.1,"note":""},{"id":"2026-04-16","date":"2026-04-16","weight":78,"note":""},{"id":"2026-04-17","date":"2026-04-17","weight":77.9,"note":""},{"id":"2026-04-18","date":"2026-04-18","weight":77.8,"note":""},{"id":"2026-04-19","date":"2026-04-19","weight":77.6,"note":""},{"id":"2026-04-20","date":"2026-04-20","weight":77.9,"note":""},{"id":"2026-04-21","date":"2026-04-21","weight":78,"note":""},{"id":"2026-04-22","date":"2026-04-22","weight":78.1,"note":""},{"id":"2026-04-24","date":"2026-04-24","weight":77.9,"note":""},{"id":"2026-04-25","date":"2026-04-25","weight":77.9,"note":""},{"id":"2026-04-26","date":"2026-04-26","weight":78,"note":""},{"id":"2026-04-27","date":"2026-04-27","weight":77.9,"note":""},{"id":"2026-04-28","date":"2026-04-28","weight":77.9,"note":""},{"id":"2026-04-29","date":"2026-04-29","weight":77.9,"note":""},{"id":"2026-04-30","date":"2026-04-30","weight":77.8,"note":"ghi chú mẫu"},{"id":"2026-05-01","date":"2026-05-01","weight":77.8,"note":""},{"id":"2026-05-02","date":"2026-05-02","weight":77.5,"note":""},{"id":"2026-05-03","date":"2026-05-03","weight":77.3,"note":""},{"id":"2026-05-04","date":"2026-05-04","weight":77.6,"note":""},{"id":"2026-05-05","date":"2026-05-05","weight":77.8,"note":""},{"id":"2026-05-06","date":"2026-05-06","weight":78.1,"note":""},{"id":"2026-05-07","date":"2026-05-07","weight":78.1,"note":""},{"id":"2026-05-08","date":"2026-05-08","weight":77.9,"note":""},{"id":"2026-05-09","date":"2026-05-09","weight":77.6,"note":""},{"id":"2026-05-10","date":"2026-05-10","weight":77.9,"note":""},{"id":"2026-05-11","date":"2026-05-11","weight":77.9,"note":""},{"id":"2026-05-12","date":"2026-05-12","weight":77.7,"note":""},{"id":"2026-05-13","date":"2026-05-13","weight":77.9,"note":""},{"id":"2026-05-14","date":"2026-05-14","weight":78.1,"note":""},{"id":"2026-05-15","date":"2026-05-15","weight":78.3,"note":""},{"id":"2026-05-16","date":"2026-05-16","weight":78.5,"note":""},{"id":"2026-05-17","date":"2026-05-17","weight":78.3,"note":""},{"id":"2026-05-18","date":"2026-05-18","weight":78.2,"note":""},{"id":"2026-05-19","date":"2026-05-19","weight":78,"note":""},{"id":"2026-05-20","date":"2026-05-20","weight":78.2,"note":""},{"id":"2026-05-22","date":"2026-05-22","weight":78.4,"note":""},{"id":"2026-05-23","date":"2026-05-23","weight":78.5,"note":""},{"id":"2026-05-24","date":"2026-05-24","weight":78.4,"note":""},{"id":"2026-05-25","date":"2026-05-25","weight":78.4,"note":""},{"id":"2026-05-26","date":"2026-05-26","weight":78.4,"note":""},{"id":"2026-05-27","date":"2026-05-27","weight":78.1,"note":""},{"id":"2026-05-28","date":"2026-05-28","weight":78.3,"note":""},{"id":"2026-05-29","date":"2026-05-29","weight":78.5,"note":""},{"id":"2026-05-30","date":"2026-05-30","weight":78.5,"note":""},{"id":"2026-05-31","date":"2026-05-31","weight":78.5,"note":""},{"id":"2026-06-01","date":"2026-06-01","weight":78.5,"note":""},{"id":"2026-06-02","date":"2026-06-02","weight":78.4,"note":""},{"id":"2026-06-04","date":"2026-06-04","weight":78.6,"note":""},{"id":"2026-06-05","date":"2026-06-05","weight":78.3,"note":""},{"id":"2026-06-06","date":"2026-06-06","weight":78.5,"note":""},{"id":"2026-06-07","date":"2026-06-07","weight":78.7,"note":""},{"id":"2026-06-08","date":"2026-06-08","weight":79,"note":""},{"id":"2026-06-09","date":"2026-06-09","weight":78.8,"note":""},{"id":"2026-06-10","date":"2026-06-10","weight":79,"note":""},{"id":"2026-06-11","date":"2026-06-11","weight":78.9,"note":"ghi chú mẫu"},{"id":"2026-06-12","date":"2026-06-12","weight":78.7,"note":""},{"id":"2026-06-13","date":"2026-06-13","weight":78.7,"note":""},{"id":"2026-06-15","date":"2026-06-15","weight":78.7,"note":""},{"id":"2026-06-16","date":"2026-06-16","weight":78.9,"note":""},{"id":"2026-06-17","date":"2026-06-17","weight":78.7,"note":""},{"id":"2026-06-20","date":"2026-06-20","weight":78.7,"note":""},{"id":"2026-06-21","date":"2026-06-21","weight":78.6,"note":""},{"id":"2026-06-23","date":"2026-06-23","weight":78.6,"note":""},{"id":"2026-06-25","date":"2026-06-25","weight":78.5,"note":""},{"id":"2026-06-26","date":"2026-06-26","weight":78.3,"note":""},{"id":"2026-06-27","date":"2026-06-27","weight":78.1,"note":""},{"id":"2026-06-28","date":"2026-06-28","weight":77.8,"note":""},{"id":"2026-06-29","date":"2026-06-29","weight":77.8,"note":"ghi chú mẫu"},{"id":"2026-07-01","date":"2026-07-01","weight":77.9,"note":""},{"id":"2026-07-02","date":"2026-07-02","weight":77.8,"note":""},{"id":"2026-07-03","date":"2026-07-03","weight":77.9,"note":"ghi chú mẫu"},{"id":"2026-07-04","date":"2026-07-04","weight":77.8,"note":""},{"id":"2026-07-05","date":"2026-07-05","weight":77.8,"note":""},{"id":"2026-07-07","date":"2026-07-07","weight":77.6,"note":""},{"id":"2026-07-08","date":"2026-07-08","weight":77.8,"note":""},{"id":"2026-07-10","date":"2026-07-10","weight":78.1,"note":""},{"id":"2026-07-11","date":"2026-07-11","weight":78.4,"note":""},{"id":"2026-07-13","date":"2026-07-13","weight":78.5,"note":""},{"id":"2026-07-14","date":"2026-07-14","weight":78.5,"note":""},{"id":"2026-07-15","date":"2026-07-15","weight":78.2,"note":""},{"id":"2026-07-16","date":"2026-07-16","weight":78.4,"note":""},{"id":"2026-07-17","date":"2026-07-17","weight":78.4,"note":""},{"id":"2026-07-18","date":"2026-07-18","weight":78.3,"note":""},{"id":"2026-07-19","date":"2026-07-19","weight":78.3,"note":""},{"id":"2026-07-20","date":"2026-07-20","weight":78.6,"note":""},{"id":"2026-07-21","date":"2026-07-21","weight":78.6,"note":""},{"id":"2026-07-22","date":"2026-07-22","weight":78.8,"note":""},{"id":"2026-07-23","date":"2026-07-23","weight":78.6,"note":""},{"id":"2026-07-24","date":"2026-07-24","weight":78.5,"note":""},{"id":"2026-07-26","date":"2026-07-26","weight":78.4,"note":""},{"id":"2026-07-28","date":"2026-07-28","weight":78.2,"note":"ghi chú mẫu"},{"id":"2026-07-29","date":"2026-07-29","weight":78.1,"note":""},{"id":"2026-07-30","date":"2026-07-30","weight":78.4,"note":""},{"id":"2026-07-31","date":"2026-07-31","weight":78.4,"note":""},{"id":"2026-08-01","date":"2026-08-01","weight":78.5,"note":""},{"id":"2026-08-02","date":"2026-08-02","weight":78.7,"note":""},{"id":"2026-08-03","date":"2026-08-03","weight":78.8,"note":""},{"id":"2026-08-04","date":"2026-08-04","weight":78.6,"note":""},{"id":"2026-08-05","date":"2026-08-05","weight":78.6,"note":"ghi chú mẫu"},{"id":"2026-08-06","date":"2026-08-06","weight":78.6,"note":""},{"id":"2026-08-07","date":"2026-08-07","weight":78.6,"note":""},{"id":"2026-08-08","date":"2026-08-08","weight":78.4,"note":""},{"id":"2026-08-09","date":"2026-08-09","weight":78.1,"note":""},{"id":"2026-08-10","date":"2026-08-10","weight":77.9,"note":""},{"id":"2026-08-11","date":"2026-08-11","weight":77.9,"note":""},{"id":"2026-08-12","date":"2026-08-12","weight":77.6,"note":""},{"id":"2026-08-14","date":"2026-08-14","weight":77.4,"note":""},{"id":"2026-08-15","date":"2026-08-15","weight":77.1,"note":""},{"id":"2026-08-16","date":"2026-08-16","weight":77.4,"note":""},{"id":"2026-08-17","date":"2026-08-17","weight":77.4,"note":""},{"id":"2026-08-19","date":"2026-08-19","weight":77.4,"note":""},{"id":"2026-08-20","date":"2026-08-20","weight":77.6,"note":""},{"id":"2026-08-21","date":"2026-08-21","weight":77.7,"note":""},{"id":"2026-08-22","date":"2026-08-22","weight":77.7,"note":""},{"id":"2026-08-24","date":"2026-08-24","weight":77.6,"note":""},{"id":"2026-08-25","date":"2026-08-25","weight":77.4,"note":""},{"id":"2026-08-26","date":"2026-08-26","weight":77.6,"note":""},{"id":"2026-08-27","date":"2026-08-27","weight":77.4,"note":""},{"id":"2026-08-29","date":"2026-08-29","weight":77.6,"note":""},{"id":"2026-08-30","date":"2026-08-30","weight":77.6,"note":""},{"id":"2026-08-31","date":"2026-08-31","weight":77.4,"note":""},{"id":"2026-09-01","date":"2026-09-01","weight":77.7,"note":""},{"id":"2026-09-02","date":"2026-09-02","weight":77.9,"note":"ghi chú mẫu"},{"id":"2026-09-03","date":"2026-09-03","weight":78.2,"note":""},{"id":"2026-09-04","date":"2026-09-04","weight":78,"note":""},{"id":"2026-09-05","date":"2026-09-05","weight":77.9,"note":""},{"id":"2026-09-06","date":"2026-09-06","weight":78.1,"note":""},{"id":"2026-09-07","date":"2026-09-07","weight":78.2,"note":""},{"id":"2026-09-08","date":"2026-09-08","weight":78.1,"note":""},{"id":"2026-09-09","date":"2026-09-09","weight":78,"note":""},{"id":"2026-09-10","date":"2026-09-10","weight":77.9,"note":""},{"id":"2026-09-11","date":"2026-09-11","weight":78.2,"note":""},{"id":"2026-09-12","date":"2026-09-12","weight":77.9,"note":""},{"id":"2026-09-13","date":"2026-09-13","weight":78.2,"note":""},{"id":"2026-09-14","date":"2026-09-14","weight":78,"note":""},{"id":"2026-09-15","date":"2026-09-15","weight":78,"note":""},{"id":"2026-09-16","date":"2026-09-16","weight":78.3,"note":"ghi chú mẫu"},{"id":"2026-09-17","date":"2026-09-17","weight":78.1,"note":""},{"id":"2026-09-18","date":"2026-09-18","weight":78.3,"note":""},{"id":"2026-09-19","date":"2026-09-19","weight":78.2,"note":""},{"id":"2026-09-20","date":"2026-09-20","weight":78.4,"note":""},{"id":"2026-09-21","date":"2026-09-21","weight":78.3,"note":""},{"id":"2026-09-22","date":"2026-09-22","weight":78.4,"note":""},{"id":"2026-09-23","date":"2026-09-23","weight":78.6,"note":""},{"id":"2026-09-24","date":"2026-09-24","weight":78.7,"note":""},{"id":"2026-09-25","date":"2026-09-25","weight":78.8,"note":""},{"id":"2026-09-26","date":"2026-09-26","weight":78.6,"note":""},{"id":"2026-09-27","date":"2026-09-27","weight":78.8,"note":""},{"id":"2026-09-28","date":"2026-09-28","weight":79,"note":""},{"id":"2026-09-29","date":"2026-09-29","weight":79.1,"note":""},{"id":"2026-09-30","date":"2026-09-30","weight":78.8,"note":""},{"id":"2026-10-01","date":"2026-10-01","weight":78.8,"note":""},{"id":"2026-10-02","date":"2026-10-02","weight":79,"note":""},{"id":"2026-10-03","date":"2026-10-03","weight":79.3,"note":""},{"id":"2026-10-04","date":"2026-10-04","weight":79.6,"note":""},{"id":"2026-10-05","date":"2026-10-05","weight":79.5,"note":""},{"id":"2026-10-06","date":"2026-10-06","weight":79.4,"note":""},{"id":"2026-10-07","date":"2026-10-07","weight":79.2,"note":""},{"id":"2026-10-08","date":"2026-10-08","weight":79.4,"note":""},{"id":"2026-10-09","date":"2026-10-09","weight":79.6,"note":""},{"id":"2026-10-10","date":"2026-10-10","weight":79.9,"note":""},{"id":"2026-10-11","date":"2026-10-11","weight":79.6,"note":""},{"id":"2026-10-13","date":"2026-10-13","weight":79.5,"note":""}];
+window.__WT_SEED_ENTRIES__ = [{"id":"2026-02-17","date":"2026-02-17","weight":77.9,"note":""},{"id":"2026-02-18","date":"2026-02-18","weight":78,"note":""},{"id":"2026-02-19","date":"2026-02-19","weight":78.3,"note":""},{"id":"2026-02-20","date":"2026-02-20","weight":78.4,"note":""},{"id":"2026-02-21","date":"2026-02-21","weight":78.3,"note":""},{"id":"2026-02-22","date":"2026-02-22","weight":78.1,"note":""},{"id":"2026-02-23","date":"2026-02-23","weight":78.3,"note":""},{"id":"2026-02-24","date":"2026-02-24","weight":78.5,"note":""},{"id":"2026-02-25","date":"2026-02-25","weight":78.4,"note":""},{"id":"2026-02-26","date":"2026-02-26","weight":78.4,"note":""},{"id":"2026-02-27","date":"2026-02-27","weight":78.2,"note":""},{"id":"2026-02-28","date":"2026-02-28","weight":78.2,"note":""},{"id":"2026-03-01","date":"2026-03-01","weight":78.2,"note":""},{"id":"2026-03-02","date":"2026-03-02","weight":78.1,"note":""},{"id":"2026-03-03","date":"2026-03-03","weight":78,"note":""},{"id":"2026-03-04","date":"2026-03-04","weight":78.2,"note":""},{"id":"2026-03-05","date":"2026-03-05","weight":78,"note":""},{"id":"2026-03-06","date":"2026-03-06","weight":78.1,"note":""},{"id":"2026-03-07","date":"2026-03-07","weight":78.1,"note":""},{"id":"2026-03-08","date":"2026-03-08","weight":78,"note":"ghi chú mẫu"},{"id":"2026-03-09","date":"2026-03-09","weight":77.8,"note":""},{"id":"2026-03-11","date":"2026-03-11","weight":77.7,"note":""},{"id":"2026-03-12","date":"2026-03-12","weight":77.9,"note":""},{"id":"2026-03-13","date":"2026-03-13","weight":78.1,"note":""},{"id":"2026-03-14","date":"2026-03-14","weight":77.9,"note":""},{"id":"2026-03-15","date":"2026-03-15","weight":77.9,"note":""},{"id":"2026-03-16","date":"2026-03-16","weight":77.9,"note":""},{"id":"2026-03-17","date":"2026-03-17","weight":77.9,"note":""},{"id":"2026-03-18","date":"2026-03-18","weight":77.7,"note":""},{"id":"2026-03-19","date":"2026-03-19","weight":77.6,"note":""},{"id":"2026-03-20","date":"2026-03-20","weight":77.5,"note":""},{"id":"2026-03-21","date":"2026-03-21","weight":77.5,"note":""},{"id":"2026-03-22","date":"2026-03-22","weight":77.6,"note":""},{"id":"2026-03-23","date":"2026-03-23","weight":77.8,"note":""},{"id":"2026-03-24","date":"2026-03-24","weight":77.6,"note":""},{"id":"2026-03-25","date":"2026-03-25","weight":77.8,"note":""},{"id":"2026-03-26","date":"2026-03-26","weight":77.6,"note":""},{"id":"2026-03-27","date":"2026-03-27","weight":77.6,"note":"ghi chú mẫu"},{"id":"2026-03-28","date":"2026-03-28","weight":77.7,"note":""},{"id":"2026-03-29","date":"2026-03-29","weight":78,"note":""},{"id":"2026-03-30","date":"2026-03-30","weight":77.9,"note":"ghi chú mẫu"},{"id":"2026-03-31","date":"2026-03-31","weight":78,"note":""},{"id":"2026-04-01","date":"2026-04-01","weight":78.1,"note":""},{"id":"2026-04-02","date":"2026-04-02","weight":78.4,"note":""},{"id":"2026-04-04","date":"2026-04-04","weight":78.2,"note":""},{"id":"2026-04-05","date":"2026-04-05","weight":78.1,"note":""},{"id":"2026-04-06","date":"2026-04-06","weight":78.1,"note":""},{"id":"2026-04-07","date":"2026-04-07","weight":77.9,"note":""},{"id":"2026-04-08","date":"2026-04-08","weight":78,"note":""},{"id":"2026-04-09","date":"2026-04-09","weight":78.2,"note":""},{"id":"2026-04-10","date":"2026-04-10","weight":78.2,"note":""},{"id":"2026-04-11","date":"2026-04-11","weight":78.1,"note":"ghi chú mẫu"},{"id":"2026-04-12","date":"2026-04-12","weight":78.1,"note":""},{"id":"2026-04-16","date":"2026-04-16","weight":78.2,"note":""},{"id":"2026-04-17","date":"2026-04-17","weight":78.1,"note":""},{"id":"2026-04-18","date":"2026-04-18","weight":78,"note":""},{"id":"2026-04-19","date":"2026-04-19","weight":77.9,"note":""},{"id":"2026-04-20","date":"2026-04-20","weight":77.8,"note":""},{"id":"2026-04-21","date":"2026-04-21","weight":77.6,"note":""},{"id":"2026-04-22","date":"2026-04-22","weight":77.9,"note":""},{"id":"2026-04-23","date":"2026-04-23","weight":78,"note":""},{"id":"2026-04-24","date":"2026-04-24","weight":78.1,"note":""},{"id":"2026-04-26","date":"2026-04-26","weight":77.9,"note":""},{"id":"2026-04-27","date":"2026-04-27","weight":77.9,"note":""},{"id":"2026-04-28","date":"2026-04-28","weight":78,"note":""},{"id":"2026-04-29","date":"2026-04-29","weight":77.9,"note":""},{"id":"2026-04-30","date":"2026-04-30","weight":77.9,"note":""},{"id":"2026-05-01","date":"2026-05-01","weight":77.9,"note":""},{"id":"2026-05-02","date":"2026-05-02","weight":77.8,"note":"ghi chú mẫu"},{"id":"2026-05-03","date":"2026-05-03","weight":77.8,"note":""},{"id":"2026-05-04","date":"2026-05-04","weight":77.5,"note":""},{"id":"2026-05-05","date":"2026-05-05","weight":77.3,"note":""},{"id":"2026-05-06","date":"2026-05-06","weight":77.6,"note":""},{"id":"2026-05-07","date":"2026-05-07","weight":77.8,"note":""},{"id":"2026-05-08","date":"2026-05-08","weight":78.1,"note":""},{"id":"2026-05-09","date":"2026-05-09","weight":78.1,"note":""},{"id":"2026-05-10","date":"2026-05-10","weight":77.9,"note":""},{"id":"2026-05-11","date":"2026-05-11","weight":77.6,"note":""},{"id":"2026-05-12","date":"2026-05-12","weight":77.9,"note":""},{"id":"2026-05-13","date":"2026-05-13","weight":77.9,"note":""},{"id":"2026-05-14","date":"2026-05-14","weight":77.7,"note":""},{"id":"2026-05-15","date":"2026-05-15","weight":77.9,"note":""},{"id":"2026-05-16","date":"2026-05-16","weight":78.1,"note":""},{"id":"2026-05-17","date":"2026-05-17","weight":78.3,"note":""},{"id":"2026-05-18","date":"2026-05-18","weight":78.5,"note":""},{"id":"2026-05-19","date":"2026-05-19","weight":78.3,"note":""},{"id":"2026-05-20","date":"2026-05-20","weight":78.2,"note":""},{"id":"2026-05-21","date":"2026-05-21","weight":78,"note":""},{"id":"2026-05-22","date":"2026-05-22","weight":78.2,"note":""},{"id":"2026-05-24","date":"2026-05-24","weight":78.4,"note":""},{"id":"2026-05-25","date":"2026-05-25","weight":78.5,"note":""},{"id":"2026-05-26","date":"2026-05-26","weight":78.4,"note":""},{"id":"2026-05-27","date":"2026-05-27","weight":78.4,"note":""},{"id":"2026-05-28","date":"2026-05-28","weight":78.4,"note":""},{"id":"2026-05-29","date":"2026-05-29","weight":78.1,"note":""},{"id":"2026-05-30","date":"2026-05-30","weight":78.3,"note":""},{"id":"2026-05-31","date":"2026-05-31","weight":78.5,"note":""},{"id":"2026-06-01","date":"2026-06-01","weight":78.5,"note":""},{"id":"2026-06-02","date":"2026-06-02","weight":78.5,"note":""},{"id":"2026-06-03","date":"2026-06-03","weight":78.5,"note":""},{"id":"2026-06-04","date":"2026-06-04","weight":78.4,"note":""},{"id":"2026-06-06","date":"2026-06-06","weight":78.6,"note":""},{"id":"2026-06-07","date":"2026-06-07","weight":78.3,"note":""},{"id":"2026-06-08","date":"2026-06-08","weight":78.5,"note":""},{"id":"2026-06-09","date":"2026-06-09","weight":78.7,"note":""},{"id":"2026-06-10","date":"2026-06-10","weight":79,"note":""},{"id":"2026-06-11","date":"2026-06-11","weight":78.8,"note":""},{"id":"2026-06-12","date":"2026-06-12","weight":79,"note":""},{"id":"2026-06-13","date":"2026-06-13","weight":78.9,"note":"ghi chú mẫu"},{"id":"2026-06-14","date":"2026-06-14","weight":78.7,"note":""},{"id":"2026-06-15","date":"2026-06-15","weight":78.7,"note":""},{"id":"2026-06-17","date":"2026-06-17","weight":78.7,"note":""},{"id":"2026-06-18","date":"2026-06-18","weight":78.9,"note":""},{"id":"2026-06-19","date":"2026-06-19","weight":78.7,"note":""},{"id":"2026-06-22","date":"2026-06-22","weight":78.7,"note":""},{"id":"2026-06-23","date":"2026-06-23","weight":78.6,"note":""},{"id":"2026-06-25","date":"2026-06-25","weight":78.6,"note":""},{"id":"2026-06-27","date":"2026-06-27","weight":78.5,"note":""},{"id":"2026-06-28","date":"2026-06-28","weight":78.3,"note":""},{"id":"2026-06-29","date":"2026-06-29","weight":78.1,"note":""},{"id":"2026-06-30","date":"2026-06-30","weight":77.8,"note":""},{"id":"2026-07-01","date":"2026-07-01","weight":77.8,"note":"ghi chú mẫu"},{"id":"2026-07-03","date":"2026-07-03","weight":77.9,"note":""},{"id":"2026-07-04","date":"2026-07-04","weight":77.8,"note":""},{"id":"2026-07-05","date":"2026-07-05","weight":77.9,"note":"ghi chú mẫu"},{"id":"2026-07-06","date":"2026-07-06","weight":77.8,"note":""},{"id":"2026-07-07","date":"2026-07-07","weight":77.8,"note":""},{"id":"2026-07-09","date":"2026-07-09","weight":77.6,"note":""},{"id":"2026-07-10","date":"2026-07-10","weight":77.8,"note":""},{"id":"2026-07-12","date":"2026-07-12","weight":78.1,"note":""},{"id":"2026-07-13","date":"2026-07-13","weight":78.4,"note":""},{"id":"2026-07-15","date":"2026-07-15","weight":78.5,"note":""},{"id":"2026-07-16","date":"2026-07-16","weight":78.5,"note":""},{"id":"2026-07-17","date":"2026-07-17","weight":78.2,"note":""},{"id":"2026-07-18","date":"2026-07-18","weight":78.4,"note":""},{"id":"2026-07-19","date":"2026-07-19","weight":78.4,"note":""},{"id":"2026-07-20","date":"2026-07-20","weight":78.3,"note":""},{"id":"2026-07-21","date":"2026-07-21","weight":78.3,"note":""},{"id":"2026-07-22","date":"2026-07-22","weight":78.6,"note":""},{"id":"2026-07-23","date":"2026-07-23","weight":78.6,"note":""},{"id":"2026-07-24","date":"2026-07-24","weight":78.8,"note":""},{"id":"2026-07-25","date":"2026-07-25","weight":78.6,"note":""},{"id":"2026-07-26","date":"2026-07-26","weight":78.5,"note":""},{"id":"2026-07-28","date":"2026-07-28","weight":78.4,"note":""},{"id":"2026-07-30","date":"2026-07-30","weight":78.2,"note":"ghi chú mẫu"},{"id":"2026-07-31","date":"2026-07-31","weight":78.1,"note":""},{"id":"2026-08-01","date":"2026-08-01","weight":78.4,"note":""},{"id":"2026-08-02","date":"2026-08-02","weight":78.4,"note":""},{"id":"2026-08-03","date":"2026-08-03","weight":78.5,"note":""},{"id":"2026-08-04","date":"2026-08-04","weight":78.7,"note":""},{"id":"2026-08-05","date":"2026-08-05","weight":78.8,"note":""},{"id":"2026-08-06","date":"2026-08-06","weight":78.6,"note":""},{"id":"2026-08-07","date":"2026-08-07","weight":78.6,"note":"ghi chú mẫu"},{"id":"2026-08-08","date":"2026-08-08","weight":78.6,"note":""},{"id":"2026-08-09","date":"2026-08-09","weight":78.6,"note":""},{"id":"2026-08-10","date":"2026-08-10","weight":78.4,"note":""},{"id":"2026-08-11","date":"2026-08-11","weight":78.1,"note":""},{"id":"2026-08-12","date":"2026-08-12","weight":77.9,"note":""},{"id":"2026-08-13","date":"2026-08-13","weight":77.9,"note":""},{"id":"2026-08-14","date":"2026-08-14","weight":77.6,"note":""},{"id":"2026-08-16","date":"2026-08-16","weight":77.4,"note":""},{"id":"2026-08-17","date":"2026-08-17","weight":77.1,"note":""},{"id":"2026-08-18","date":"2026-08-18","weight":77.4,"note":""},{"id":"2026-08-19","date":"2026-08-19","weight":77.4,"note":""},{"id":"2026-08-21","date":"2026-08-21","weight":77.4,"note":""},{"id":"2026-08-22","date":"2026-08-22","weight":77.6,"note":""},{"id":"2026-08-23","date":"2026-08-23","weight":77.7,"note":""},{"id":"2026-08-24","date":"2026-08-24","weight":77.7,"note":""},{"id":"2026-08-26","date":"2026-08-26","weight":77.6,"note":""},{"id":"2026-08-27","date":"2026-08-27","weight":77.4,"note":""},{"id":"2026-08-28","date":"2026-08-28","weight":77.6,"note":""},{"id":"2026-08-29","date":"2026-08-29","weight":77.4,"note":""},{"id":"2026-08-31","date":"2026-08-31","weight":77.6,"note":""},{"id":"2026-09-01","date":"2026-09-01","weight":77.6,"note":""},{"id":"2026-09-02","date":"2026-09-02","weight":77.4,"note":""},{"id":"2026-09-03","date":"2026-09-03","weight":77.7,"note":""},{"id":"2026-09-04","date":"2026-09-04","weight":77.9,"note":"ghi chú mẫu"},{"id":"2026-09-05","date":"2026-09-05","weight":78.2,"note":""},{"id":"2026-09-06","date":"2026-09-06","weight":78,"note":""},{"id":"2026-09-07","date":"2026-09-07","weight":77.9,"note":""},{"id":"2026-09-08","date":"2026-09-08","weight":78.1,"note":""},{"id":"2026-09-09","date":"2026-09-09","weight":78.2,"note":""},{"id":"2026-09-10","date":"2026-09-10","weight":78.1,"note":""},{"id":"2026-09-11","date":"2026-09-11","weight":78,"note":""},{"id":"2026-09-12","date":"2026-09-12","weight":77.9,"note":""},{"id":"2026-09-13","date":"2026-09-13","weight":78.2,"note":""},{"id":"2026-09-14","date":"2026-09-14","weight":77.9,"note":""},{"id":"2026-09-15","date":"2026-09-15","weight":78.2,"note":""},{"id":"2026-09-16","date":"2026-09-16","weight":78,"note":""},{"id":"2026-09-17","date":"2026-09-17","weight":78,"note":""},{"id":"2026-09-18","date":"2026-09-18","weight":78.3,"note":"ghi chú mẫu"},{"id":"2026-09-19","date":"2026-09-19","weight":78.1,"note":""},{"id":"2026-09-20","date":"2026-09-20","weight":78.3,"note":""},{"id":"2026-09-21","date":"2026-09-21","weight":78.2,"note":""},{"id":"2026-09-22","date":"2026-09-22","weight":78.4,"note":""},{"id":"2026-09-23","date":"2026-09-23","weight":78.3,"note":""},{"id":"2026-09-24","date":"2026-09-24","weight":78.4,"note":""},{"id":"2026-09-25","date":"2026-09-25","weight":78.6,"note":""},{"id":"2026-09-26","date":"2026-09-26","weight":78.7,"note":""},{"id":"2026-09-27","date":"2026-09-27","weight":78.8,"note":""},{"id":"2026-09-28","date":"2026-09-28","weight":78.6,"note":""},{"id":"2026-09-29","date":"2026-09-29","weight":78.8,"note":""},{"id":"2026-09-30","date":"2026-09-30","weight":79,"note":""},{"id":"2026-10-01","date":"2026-10-01","weight":79.1,"note":""},{"id":"2026-10-02","date":"2026-10-02","weight":78.8,"note":""},{"id":"2026-10-03","date":"2026-10-03","weight":78.8,"note":""},{"id":"2026-10-04","date":"2026-10-04","weight":79,"note":""},{"id":"2026-10-05","date":"2026-10-05","weight":79.3,"note":""},{"id":"2026-10-06","date":"2026-10-06","weight":79.6,"note":""},{"id":"2026-10-07","date":"2026-10-07","weight":79.5,"note":""},{"id":"2026-10-08","date":"2026-10-08","weight":79.4,"note":""},{"id":"2026-10-09","date":"2026-10-09","weight":79.2,"note":""},{"id":"2026-10-10","date":"2026-10-10","weight":79.4,"note":""},{"id":"2026-10-11","date":"2026-10-11","weight":79.6,"note":""},{"id":"2026-10-12","date":"2026-10-12","weight":79.9,"note":""},{"id":"2026-10-13","date":"2026-10-13","weight":79.6,"note":""},{"id":"2026-10-15","date":"2026-10-15","weight":79.5,"note":""}];
+</script>
+<script>
+// Cấu hình dự án Firebase của bạn (lấy ở Firebase console → Project settings → Your apps → Web app).
+// apiKey + projectId không phải mật khẩu: dữ liệu được bảo vệ bằng Firestore Rules (chỉ chủ tài khoản đọc/ghi được).
+// Để trống → app chạy bình thường, chỉ là chưa bật đồng bộ.
+window.WT_FIREBASE = {
+  apiKey: '',
+  projectId: '',
+};
+
 </script>
 <script>
 // ===================================================================
@@ -491,6 +526,28 @@ function loadEntries() {
 }
 function saveEntries(entries) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  if (window.__wtOnDataChanged) window.__wtOnDataChanged(); // đồng bộ Firebase (sync.js)
+}
+// Ngày đã bị xoá (để máy khác cũng xoá khi đồng bộ): { 'YYYY-MM-DD': thời điểm xoá (ms) }
+const DELETED_KEY = 'wt_deleted_v1';
+function loadDeleted() { try { return JSON.parse(localStorage.getItem(DELETED_KEY) || '{}') || {}; } catch (e) { return {}; } }
+function saveDeleted(map) { try { localStorage.setItem(DELETED_KEY, JSON.stringify(map)); } catch (e) { /* ignore */ } }
+function markDeleted(dates) {
+  const m = loadDeleted(), now = Date.now();
+  dates.forEach(d => { m[d] = now; });
+  saveDeleted(m);
+}
+function unmarkDeleted(dates) {
+  const m = loadDeleted();
+  let changed = false;
+  dates.forEach(d => { if (d in m) { delete m[d]; changed = true; } });
+  if (changed) saveDeleted(m);
+}
+// Mục tiêu + chiều cao: thời điểm sửa gần nhất (để đồng bộ)
+const SETTINGS_TS_KEY = 'wt_settings_ts_v1';
+function touchSettings() {
+  try { localStorage.setItem(SETTINGS_TS_KEY, String(Date.now())); } catch (e) { /* ignore */ }
+  if (window.__wtOnDataChanged) window.__wtOnDataChanged();
 }
 function loadGoal() {
   const v = localStorage.getItem(GOAL_KEY);
@@ -538,6 +595,8 @@ function sortedEntries() {
   return [...entries].sort((a, b) => a.date.localeCompare(b.date));
 }
 function upsertEntry(entry) {
+  entry = { ...entry, updatedAt: Date.now() }; // thời điểm sửa → bản mới nhất thắng khi đồng bộ
+  unmarkDeleted([entry.date]);
   const idx = entries.findIndex(e => e.date === entry.date);
   if (idx >= 0) entries[idx] = { ...entries[idx], ...entry };
   else entries.push(entry);
@@ -1527,16 +1586,19 @@ heightInput.value = heightCm !== null ? heightCm : '';
 goalInput.addEventListener('change', () => {
   goalWeight = goalInput.value === '' ? null : parseFloat(goalInput.value);
   saveGoal(goalWeight);
+  touchSettings();
   drawChart();
 });
 heightInput.addEventListener('change', () => {
   heightCm = heightInput.value === '' ? null : parseFloat(heightInput.value);
   saveHeight(heightCm);
+  touchSettings();
   drawChart();
 });
 
 document.getElementById('clearBtn').addEventListener('click', () => {
   if (confirm('Xoá toàn bộ dữ liệu cân nặng đã nhập? Không thể hoàn tác.')) {
+    markDeleted(entries.map(e => e.date)); // đã đăng nhập Firebase thì máy khác cũng xoá theo
     entries = [];
     saveEntries(entries);
     selected = null;
@@ -1612,7 +1674,9 @@ csvFileInput.addEventListener('change', () => {
       parsed = parseCsv(text, 'lbs');
     }
     const byDate = new Map(entries.map(e => [e.date, e]));
-    parsed.forEach(e => byDate.set(e.date, e));
+    const now = Date.now();
+    parsed.forEach(e => byDate.set(e.date, { ...e, updatedAt: now }));
+    unmarkDeleted(parsed.map(e => e.date));
     entries = Array.from(byDate.values());
     saveEntries(entries);
     resetView();
@@ -1811,7 +1875,10 @@ document.getElementById('saveEntryBtn').addEventListener('click', () => {
   const weight = (draft.intPart||0) + (draft.decPart||0)/10;
   if (!weight || weight <= 0) { alert('Vui lòng chọn cân nặng.'); return; }
   // sửa một lần cân mà đổi sang ngày khác → bỏ bản ghi ở ngày cũ
-  if (draft.origDate && draft.origDate !== draft.date) entries = entries.filter(e => e.date !== draft.origDate);
+  if (draft.origDate && draft.origDate !== draft.date) {
+    entries = entries.filter(e => e.date !== draft.origDate);
+    markDeleted([draft.origDate]);
+  }
   upsertEntry({ id: draft.date, date: draft.date, weight, note: draft.note || '' });
   // Giữ nguyên zoom/pan hiện tại thay vì reset về toàn cảnh mỗi lần thêm số đo mới
   selected = entries.find(e => e.date === draft.date) || null;
@@ -2016,6 +2083,308 @@ resizeCanvas();
 // font đóng gói tải xong → vẽ lại biểu đồ cho đúng font số
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => drawChart());
 checkForUpdate(false);
+
+</script>
+<script>
+// ===================================================================
+// Đồng bộ Firebase (Auth email/mật khẩu + Firestore) qua REST API — không cần SDK nặng.
+// Dữ liệu vẫn nằm trên máy là chính: mất mạng app chạy bình thường, có mạng thì tự đồng bộ.
+// Mỗi lần cân là 1 tài liệu users/{uid}/entries/{YYYY-MM-DD} {weight, note, updatedAt, deleted}.
+// Gộp dữ liệu: cùng 1 ngày, bản có updatedAt mới hơn thắng (kể cả bản "đã xoá").
+// Mục tiêu + chiều cao ở tài liệu users/{uid} {goal, height, settingsUpdatedAt}.
+// Created by Mondiro
+// ===================================================================
+(function () {
+  const CFG = window.WT_FIREBASE || {};
+  const CONFIGURED = !!(CFG.apiKey && CFG.projectId);
+  const AUTH_KEY = 'wt_fb_auth_v1';      // {email, uid, refreshToken}
+  const LAST_SYNC_KEY = 'wt_fb_last_sync_v1';
+  const FS_BASE = `https://firestore.googleapis.com/v1/projects/${CFG.projectId}/databases/(default)/documents`;
+
+  let auth = null;            // {email, uid, refreshToken}
+  let idToken = null, idTokenExp = 0;
+  let syncing = false, pending = false, timer = null;
+  let state = 'off';          // off | idle | syncing | error | offline
+  let lastError = '';
+
+  const $ = (id) => document.getElementById(id);
+  const lsGet = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  const lsSet = (k, v) => { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) { /* ignore */ } };
+  try { auth = JSON.parse(lsGet(AUTH_KEY) || 'null'); } catch (e) { auth = null; }
+
+  // ---------------- Firebase Auth (REST) ----------------
+  const AUTH_MSG = {
+    EMAIL_EXISTS: 'Email này đã có tài khoản — bấm Đăng nhập.',
+    EMAIL_NOT_FOUND: 'Chưa có tài khoản với email này — bấm Tạo tài khoản.',
+    INVALID_PASSWORD: 'Sai mật khẩu.',
+    INVALID_LOGIN_CREDENTIALS: 'Sai email hoặc mật khẩu.',
+    INVALID_EMAIL: 'Email không hợp lệ.',
+    MISSING_PASSWORD: 'Chưa nhập mật khẩu.',
+    TOO_MANY_ATTEMPTS_TRY_LATER: 'Thử sai quá nhiều lần, đợi vài phút rồi thử lại.',
+    USER_DISABLED: 'Tài khoản đã bị khoá.',
+    OPERATION_NOT_ALLOWED: 'Firebase chưa bật đăng nhập Email/Password (xem README).',
+    ADMIN_ONLY_OPERATION: 'Firebase đang tắt tạo tài khoản mới.',
+  };
+  function authError(data) {
+    const code = (data && data.error && data.error.message || 'UNKNOWN').split(' ')[0].split(':')[0];
+    if (code.startsWith('WEAK_PASSWORD')) return 'Mật khẩu cần ít nhất 6 ký tự.';
+    return AUTH_MSG[code] || `Lỗi Firebase: ${code}`;
+  }
+  async function authCall(path, body) {
+    const res = await fetch(`https://identitytoolkit.googleapis.com/v1/${path}?key=${CFG.apiKey}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(authError(data));
+    return data;
+  }
+  function setAuth(email, uid, refreshToken, token, expiresIn) {
+    auth = { email, uid, refreshToken };
+    lsSet(AUTH_KEY, JSON.stringify(auth));
+    idToken = token; idTokenExp = Date.now() + (Number(expiresIn) - 60) * 1000;
+  }
+  async function getToken() {
+    if (idToken && Date.now() < idTokenExp) return idToken;
+    const res = await fetch(`https://securetoken.googleapis.com/v1/token?key=${CFG.apiKey}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(auth.refreshToken)}`,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const code = data && data.error && data.error.message || '';
+      if (/TOKEN_EXPIRED|USER_NOT_FOUND|INVALID_REFRESH_TOKEN|USER_DISABLED/.test(code)) { signOut(); throw new Error('Phiên đăng nhập hết hạn, đăng nhập lại nhé.'); }
+      throw new Error('Không làm mới được phiên đăng nhập.');
+    }
+    setAuth(auth.email, data.user_id, data.refresh_token, data.id_token, data.expires_in);
+    return idToken;
+  }
+  async function signIn(email, password, create) {
+    const data = await authCall(create ? 'accounts:signUp' : 'accounts:signInWithPassword', { email, password, returnSecureToken: true });
+    setAuth(data.email || email, data.localId, data.refreshToken, data.idToken, data.expiresIn);
+  }
+  function signOut() {
+    auth = null; idToken = null; idTokenExp = 0;
+    lsSet(AUTH_KEY, null); lsSet(LAST_SYNC_KEY, null);
+    setState(CONFIGURED ? 'off' : 'off');
+    renderPanel();
+  }
+
+  // ---------------- Firestore (REST) ----------------
+  async function fsFetch(url, opts = {}) {
+    const res = await fetch(url, { ...opts, headers: { 'Authorization': `Bearer ${await getToken()}`, 'Content-Type': 'application/json', ...(opts.headers || {}) } });
+    if (res.status === 404) return null;
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg = data && data.error && data.error.status === 'PERMISSION_DENIED'
+        ? 'Firestore từ chối (kiểm tra Rules trong README).' : `Firestore lỗi ${res.status}`;
+      throw new Error(msg);
+    }
+    return data;
+  }
+  const num = (f) => f ? Number(f.integerValue ?? f.doubleValue ?? 0) : 0;
+  async function listRemoteEntries() {
+    const out = new Map();
+    let pageToken = '';
+    do {
+      const data = await fsFetch(`${FS_BASE}/users/${auth.uid}/entries?pageSize=300${pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : ''}`);
+      (data && data.documents || []).forEach(doc => {
+        const f = doc.fields || {};
+        const date = doc.name.split('/').pop();
+        out.set(date, {
+          date,
+          weight: num(f.weight),
+          note: f.note ? f.note.stringValue || '' : '',
+          updatedAt: num(f.updatedAt),
+          deleted: !!(f.deleted && f.deleted.booleanValue),
+        });
+      });
+      pageToken = data && data.nextPageToken || '';
+    } while (pageToken);
+    return out;
+  }
+  const entryDoc = (r) => ({
+    update: {
+      name: `projects/${CFG.projectId}/databases/(default)/documents/users/${auth.uid}/entries/${r.date}`,
+      fields: {
+        weight: { doubleValue: r.weight || 0 },
+        note: { stringValue: r.note || '' },
+        updatedAt: { integerValue: String(r.updatedAt || 1) },
+        deleted: { booleanValue: !!r.deleted },
+      },
+    },
+  });
+  async function commit(writes) {
+    for (let i = 0; i < writes.length; i += 400) {
+      await fsFetch(`${FS_BASE}:commit`, { method: 'POST', body: JSON.stringify({ writes: writes.slice(i, i + 400) }) });
+    }
+  }
+
+  // ---------------- gộp dữ liệu 2 chiều ----------------
+  async function syncNow() {
+    if (!CONFIGURED || !auth) return;
+    if (syncing) { pending = true; return; }
+    if (!navigator.onLine) { setState('offline'); return; }
+    syncing = true; pending = false;
+    setState('syncing');
+    try {
+      const remote = await listRemoteEntries();
+      const deleted = loadDeleted();
+      const local = new Map(entries.map(e => [e.date, e]));
+      const writes = [];
+      let localChanged = false;
+      const dates = new Set([...local.keys(), ...Object.keys(deleted), ...remote.keys()]);
+      dates.forEach(date => {
+        const le = local.get(date);
+        const lt = le ? (le.updatedAt || 0) : (deleted[date] || 0);
+        const r = remote.get(date);
+        const rt = r ? r.updatedAt : -1;
+        if (r && rt > lt) {               // bản trên Firebase mới hơn → cập nhật máy này
+          if (r.deleted) { if (le) { local.delete(date); localChanged = true; } deleted[date] = rt; }
+          else { local.set(date, { id: date, date, weight: r.weight, note: r.note, updatedAt: rt }); delete deleted[date]; localChanged = true; }
+        } else if (lt > rt || (!r && (le || deleted[date]))) { // máy này mới hơn → đẩy lên
+          const stamp = Math.max(lt, 1);
+          if (le) {
+            if (!le.updatedAt) { local.set(date, { ...le, updatedAt: stamp }); localChanged = true; }
+            writes.push(entryDoc({ date, weight: le.weight, note: le.note, updatedAt: stamp }));
+          } else {
+            writes.push(entryDoc({ date, weight: 0, note: '', updatedAt: stamp, deleted: true }));
+          }
+        }
+      });
+      if (writes.length) await commit(writes);
+
+      // mục tiêu + chiều cao
+      const sdoc = await fsFetch(`${FS_BASE}/users/${auth.uid}`);
+      const sf = sdoc && sdoc.fields || {};
+      const rts = num(sf.settingsUpdatedAt), lts = Number(lsGet(SETTINGS_TS_KEY) || 0);
+      let settingsChanged = false;
+      if (rts > lts) {
+        goalWeight = sf.goal && sf.goal.nullValue === undefined ? num(sf.goal) || null : null;
+        heightCm = sf.height && sf.height.nullValue === undefined ? num(sf.height) || null : null;
+        saveGoal(goalWeight); saveHeight(heightCm);
+        lsSet(SETTINGS_TS_KEY, String(rts));
+        const gi = $('goalInput'), hi = $('heightInput');
+        if (gi) gi.value = goalWeight !== null ? goalWeight : '';
+        if (hi) hi.value = heightCm !== null ? heightCm : '';
+        settingsChanged = true;
+      } else if (lts > rts) {
+        await fsFetch(`${FS_BASE}/users/${auth.uid}?updateMask.fieldPaths=goal&updateMask.fieldPaths=height&updateMask.fieldPaths=settingsUpdatedAt`, {
+          method: 'PATCH',
+          body: JSON.stringify({ fields: {
+            goal: goalWeight === null ? { nullValue: null } : { doubleValue: goalWeight },
+            height: heightCm === null ? { nullValue: null } : { doubleValue: heightCm },
+            settingsUpdatedAt: { integerValue: String(lts) },
+          } }),
+        });
+      }
+
+      if (localChanged) {
+        entries = Array.from(local.values());
+        saveDeleted(deleted);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); // ghi thẳng, không kích hoạt đồng bộ lại
+      }
+      if (localChanged || settingsChanged) drawChart();
+      lsSet(LAST_SYNC_KEY, String(Date.now()));
+      setState('idle');
+    } catch (e) {
+      lastError = e && e.message ? e.message : String(e);
+      setState(navigator.onLine ? 'error' : 'offline');
+    } finally {
+      syncing = false;
+      if (pending) schedule(500);
+    }
+  }
+  function schedule(ms = 2500) {
+    if (!CONFIGURED || !auth) return;
+    clearTimeout(timer);
+    timer = setTimeout(syncNow, ms);
+  }
+  window.__wtOnDataChanged = () => schedule();
+
+  // ---------------- giao diện ----------------
+  const ICON = $('syncIcon');
+  function setState(s) {
+    state = auth ? s : 'off';
+    if (ICON) {
+      ICON.className = `sync-ic ${state}`;
+      ICON.title = { off: 'Chưa bật đồng bộ', idle: 'Đã đồng bộ', syncing: 'Đang đồng bộ…', error: 'Đồng bộ lỗi', offline: 'Không có mạng — sẽ đồng bộ khi có mạng' }[state];
+    }
+    renderStatus();
+  }
+  function fmtTime(ms) {
+    const d = new Date(ms);
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} ${d.getDate()}/${d.getMonth() + 1}`;
+  }
+  function renderStatus() {
+    const el = $('syncStatus');
+    if (!el) return;
+    const last = Number(lsGet(LAST_SYNC_KEY) || 0);
+    el.className = 'sync-status ' + state;
+    el.textContent =
+      state === 'syncing' ? 'Đang đồng bộ…'
+      : state === 'error' ? `Lỗi: ${lastError}`
+      : state === 'offline' ? 'Không có mạng — sẽ tự đồng bộ khi có mạng lại.'
+      : last ? `Đã đồng bộ lúc ${fmtTime(last)}` : 'Chưa đồng bộ lần nào.';
+  }
+  function renderPanel() {
+    const box = $('syncPanel');
+    if (!box) return;
+    if (!CONFIGURED) {
+      box.innerHTML = '<div class="sync-note">Chưa kết nối Firebase. Làm theo hướng dẫn trong README (mục Đồng bộ Firebase), gửi apiKey + projectId để bật.</div>';
+      return;
+    }
+    if (!auth) {
+      box.innerHTML = `
+        <div class="field"><label for="fbEmail">Email</label><input type="email" id="fbEmail" autocomplete="username" placeholder="vd: ban@gmail.com"></div>
+        <div class="field"><label for="fbPass">Mật khẩu (ít nhất 6 ký tự)</label><input type="password" id="fbPass" autocomplete="current-password" placeholder="••••••"></div>
+        <div class="sync-btns">
+          <button class="rowbtn primary" id="fbSignIn"><span>Đăng nhập</span></button>
+          <button class="rowbtn" id="fbSignUp"><span>Tạo tài khoản</span></button>
+        </div>
+        <button class="linkbtn" id="fbReset">Quên mật khẩu?</button>
+        <div class="sync-note" id="fbMsg">Đăng nhập cùng 1 tài khoản trên các máy để thấy cùng dữ liệu.</div>`;
+      const go = async (create) => {
+        const email = $('fbEmail').value.trim(), pass = $('fbPass').value;
+        const msg = $('fbMsg');
+        msg.className = 'sync-note'; msg.textContent = create ? 'Đang tạo tài khoản…' : 'Đang đăng nhập…';
+        try {
+          await signIn(email, pass, create);
+          renderPanel();
+          await syncNow();
+        } catch (e) { msg.className = 'sync-note err'; msg.textContent = e.message; }
+      };
+      $('fbSignIn').onclick = () => go(false);
+      $('fbSignUp').onclick = () => go(true);
+      $('fbReset').onclick = async () => {
+        const email = $('fbEmail').value.trim(), msg = $('fbMsg');
+        if (!email) { msg.className = 'sync-note err'; msg.textContent = 'Nhập email trước rồi bấm Quên mật khẩu.'; return; }
+        try { await authCall('accounts:sendOobCode', { requestType: 'PASSWORD_RESET', email }); msg.className = 'sync-note'; msg.textContent = 'Đã gửi email đặt lại mật khẩu, kiểm tra hộp thư nhé.'; }
+        catch (e) { msg.className = 'sync-note err'; msg.textContent = e.message; }
+      };
+      return;
+    }
+    box.innerHTML = `
+      <div class="field"><label>Đã đăng nhập</label><div class="sync-email"></div><div class="sync-status" id="syncStatus"></div></div>
+      <div class="sync-btns">
+        <button class="rowbtn primary" id="fbSyncNow"><span>Đồng bộ ngay</span></button>
+        <button class="rowbtn" id="fbSignOut"><span>Đăng xuất</span></button>
+      </div>`;
+    box.querySelector('.sync-email').textContent = auth.email;
+    $('fbSyncNow').onclick = () => syncNow();
+    $('fbSignOut').onclick = () => { if (confirm('Đăng xuất? Dữ liệu trên máy này vẫn giữ nguyên.')) signOut(); };
+    renderStatus();
+  }
+
+  // ---------------- khởi động ----------------
+  renderPanel();
+  setState(auth ? 'idle' : 'off');
+  if (ICON) ICON.addEventListener('click', () => { if (auth) syncNow(); });
+  if (CONFIGURED && auth) syncNow();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') schedule(300); });
+  window.addEventListener('online', () => schedule(300));
+  window.addEventListener('offline', () => { if (auth) setState('offline'); });
+  window.WT_SYNC = { syncNow, get state() { return state; } }; // dùng khi kiểm thử
+})();
 
 </script>
 </body>
