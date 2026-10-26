@@ -50,6 +50,17 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
+      - name: Giải mã khoá ký (GitHub Secrets)
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KS_B64" ] || [ -z "$KS_PASS" ]; then echo "::error::Thiếu secret ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD"; exit 1; fi
+          echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/mondiro.jks"
+          echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/mondiro.jks" >> "$GITHUB_ENV"
+          echo "ANDROID_KEYSTORE_PASSWORD=$KS_PASS" >> "$GITHUB_ENV"
+          echo "::add-mask::$KS_PASS"
+
       - name: Build debug APK
         id: build
         continue-on-error: true
