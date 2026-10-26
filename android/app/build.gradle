@@ -8,7 +8,7 @@ android {
     namespace "com.mondiro.weighttracking"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.mondiro.weighttracking"
+        applicationId "com.mondiro.weight"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode buildNumber
@@ -20,22 +20,26 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
-    // Cùng 1 khoá ký cho mọi bản build (cả trên máy lẫn GitHub) — Android chỉ cho
-    // cài đè bản cập nhật (giữ nguyên dữ liệu) khi chữ ký giống hệt bản cũ.
+    // Khoá ký lấy từ GitHub Secrets (ANDROID_KEYSTORE_BASE64 + ANDROID_KEYSTORE_PASSWORD).
+    // KHÔNG để file khoá trong repo (repo public). Alias cố định: mondiro.
+    def ksFile = System.getenv("ANDROID_KEYSTORE_FILE")
+    def ksPass = System.getenv("ANDROID_KEYSTORE_PASSWORD")
     signingConfigs {
         mondiro {
-            storeFile file('mondiro-release.keystore')
-            storePassword 'mondiro-wt-2026'
-            keyAlias 'weighttracking'
-            keyPassword 'mondiro-wt-2026'
+            if (ksFile && ksPass) {
+                storeFile file(ksFile)
+                storePassword ksPass
+                keyAlias "mondiro"
+                keyPassword ksPass
+            }
         }
     }
     buildTypes {
         debug {
-            signingConfig signingConfigs.mondiro
+            signingConfig((ksFile && ksPass) ? signingConfigs.mondiro : signingConfigs.debug)
         }
         release {
-            signingConfig signingConfigs.mondiro
+            signingConfig((ksFile && ksPass) ? signingConfigs.mondiro : signingConfigs.debug)
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
