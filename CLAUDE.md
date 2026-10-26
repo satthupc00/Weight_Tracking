@@ -17,7 +17,7 @@ App Android (Capacitor, HTML/CSS/JS thuần trong `www/`) của Mondiro, tối �
 ## Không được làm
 - **Không đưa dữ liệu cân nặng/ghi chú thật vào repo** (repo public). `www/seed-data.js` phải rỗng; preview dùng dữ liệu giả.
 - **Không xoá/đổi `android/app/mondiro-release.keystore`** — đổi khoá thì máy đã cài không cập nhật đè được.
-- Không đổi `appId` `com.mondiro.weighttracking`.
+- Không đổi `appId` `com.mondiro.weight` (đã đăng ký với Google Android Developer Console từ 23/10/2026).
 
 ## Kỹ thuật
 - Đồng bộ Firebase: `www/sync.js` (REST: Auth email/mật khẩu + Firestore `users/{uid}/entries/{date}`), cấu hình ở
