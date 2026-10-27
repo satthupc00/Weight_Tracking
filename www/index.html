@@ -94,6 +94,9 @@
       <div class="section-title">Đồng bộ Firebase</div>
       <div id="syncPanel"></div>
 
+      <div class="section-title">Thử nghiệm</div>
+      <button class="rowbtn" id="tuneOpenBtn"><span>Chỉnh thông số kim &amp; nấc thước</span><span class="arrow">⇢</span></button>
+
       <div class="section-title">Cập nhật</div>
       <button class="rowbtn" id="checkUpdateBtn"><span>Kiểm tra bản mới</span><span class="arrow" id="appVersionLabel">⇢</span></button>
 
@@ -107,6 +110,19 @@
     <button class="tab on" id="navChart"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg><span>Biểu đồ</span></button>
     <button class="add" id="navAdd" title="Thêm cân nặng" aria-label="Thêm cân nặng"><svg width="30" height="30" viewBox="0 0 30 30"><path d="M15 4v22M4 15h22" stroke="#fff" stroke-width="6" stroke-linecap="round"/></svg></button>
     <button class="tab" id="navSettings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Cài đặt</span></button>
+  </div>
+
+  <!-- bảng chỉnh thông số kim (thử nghiệm) -->
+  <div id="tunePanel">
+    <div class="tune-head">
+      <span>Chỉnh kim — kéo thước ở trên để thử</span>
+      <button id="tuneCloseBtn" aria-label="Đóng">✕</button>
+    </div>
+    <div id="tuneRows"></div>
+    <div class="tune-btns">
+      <button class="rowbtn" id="tuneResetBtn">Về mặc định</button>
+      <button class="rowbtn primary" id="tuneCopyBtn">Chép số</button>
+    </div>
   </div>
 
   <div id="credit">Created by Mondiro</div>

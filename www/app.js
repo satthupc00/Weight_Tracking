@@ -672,15 +672,32 @@ let tapeHomeKg = null;               // số cân mới nhất — vị trí "nh
 let tapeTagHome = '';                // nội dung nhãn đỏ lúc bình thường
 let tapeDrag = null;
 const needleSim = { ang: 0, vel: 0, lastX: null, raf: null, calm: 0 };
+// Thông số kim + nấc — chỉnh thử được trong Cài đặt → "Chỉnh thông số kim" (lưu trên máy)
+const TUNE_KEY = 'wt_needle_tune_v1';
+const TUNE_DEFAULTS = {
+  notchPull: 1.25,    // độ cứng nấc: lực hút của mỗi vạch (lớn hơn độ bám tay → kẹt rồi bật)
+  dragSpring: 0.24,   // độ bám tay: lò xo nối ngón tay → thước
+  dragDamp: 0.62,     // giảm chấn thước: nhỏ = bật sang nấc gọn, lớn = trượt lâu
+  pivot: 520,         // tâm xoay của kim cách mép trên thước bao nhiêu px
+  needleGain: 0.12,   // độ nhạy: thước chạy nhanh thì kim lệch bao nhiêu
+  needleMax: 2.6,     // góc lệch tối đa (độ)
+  needleSpring: 0.11, // lò xo kéo kim về giữa
+  needleDamp: 0.85,   // giảm chấn kim: lớn = lắc lâu
+  vibrate: 4,         // rung mỗi nấc (ms), 0 = tắt
+};
+let TUNE = { ...TUNE_DEFAULTS };
+try { Object.assign(TUNE, JSON.parse(localStorage.getItem(TUNE_KEY) || '{}')); } catch (e) { /* ignore */ }
+function applyTune() { needleEl.style.transformOrigin = `50% ${-TUNE.pivot}px`; }
+applyTune();
 function tapeX() { return new DOMMatrixReadOnly(getComputedStyle(tapeSvg).transform).m41; }
 function needleLoop() {
   const x = tapeX();
   const v = needleSim.lastX === null ? 0 : x - needleSim.lastX; // px thước chạy trong 1 khung hình
   needleSim.lastX = x;
   // tâm xoay của kim nằm rất xa phía trên (CSS transform-origin) → góc nhỏ nhưng cả cây kim lia ngang theo cung tròn lớn
-  const target = Math.max(-2.6, Math.min(2.6, -v * 0.12)); // kim bị thước "kéo" lệch theo hướng chạy
-  needleSim.vel += (target - needleSim.ang) * 0.11;      // lò xo kéo kim về (cần dài → lắc chậm hơn chút)
-  needleSim.vel *= 0.85;                                 // giảm chấn → nảy vài cái rồi đứng
+  const target = Math.max(-TUNE.needleMax, Math.min(TUNE.needleMax, -v * TUNE.needleGain)); // kim bị thước "kéo" lệch theo hướng chạy
+  needleSim.vel += (target - needleSim.ang) * TUNE.needleSpring; // lò xo kéo kim về (cần dài → lắc chậm hơn chút)
+  needleSim.vel *= TUNE.needleDamp;                              // giảm chấn → nảy vài cái rồi đứng
   needleSim.ang += needleSim.vel;
   needleEl.style.transform = `rotate(${needleSim.ang.toFixed(3)}deg)`;
   const still = Math.abs(needleSim.ang) < 0.005 && Math.abs(needleSim.vel) < 0.005 && Math.abs(v) < 0.05;
@@ -696,9 +713,7 @@ function wakeNeedle() {
 // Kéo thước có "nấc" kiểu cơ khí: thước nối với ngón tay bằng 1 lò xo mềm, còn mỗi vạch 0,1 kg là 1 hõm
 // hút thước vào. Kéo chậm thì thước kẹt ở nấc, tới lúc lò xo đủ căng thì bật "tách" sang nấc kế.
 const NOTCH = PX_PER_KG / 10;   // 12 px = 0,1 kg
-const DRAG_SPRING = 0.24;       // độ cứng lò xo ngón tay → thước
-const NOTCH_PULL = 1.25;        // lực hút của hõm (lớn hơn lò xo → có hiện tượng kẹt-rồi-bật)
-const DRAG_DAMP = 0.62;         // giảm chấn: bật sang nấc mới gọn, không rung lâu
+// (độ cứng lò xo / lực hút hõm / giảm chấn nằm trong TUNE ở trên)
 let tapeTickAt = 0;
 function tapeKgAt(x) { return tapeRange.min + (tapeWrap.clientWidth / 2 - x) / PX_PER_KG; }
 function showDragKg(x) {
@@ -707,7 +722,7 @@ function showDragKg(x) {
   tapeDrag.kg10 = kg10;
   tapeTag.innerHTML = `${fmtKg(kg10 / 10)}<small>kg</small>`;
   const now = performance.now(); // rung nhẹ mỗi nấc (máy Android), không rung dồn khi kéo rất nhanh
-  if (now - tapeTickAt > 35 && navigator.vibrate) { try { navigator.vibrate(4); } catch (e) { /* ignore */ } }
+  if (TUNE.vibrate > 0 && now - tapeTickAt > 35 && navigator.vibrate) { try { navigator.vibrate(Math.round(TUNE.vibrate)); } catch (e) { /* ignore */ } }
   tapeTickAt = now;
 }
 function tapeDragLoop() {
@@ -715,8 +730,8 @@ function tapeDragLoop() {
   if (!d) return;
   const half = tapeWrap.clientWidth / 2;
   const phase = (d.p - half) / NOTCH * 2 * Math.PI;   // 0 đúng vạch, ±π giữa 2 vạch
-  d.v += (d.target - d.p) * DRAG_SPRING - Math.sin(phase) * NOTCH_PULL;
-  d.v *= DRAG_DAMP;
+  d.v += (d.target - d.p) * TUNE.dragSpring - Math.sin(phase) * TUNE.notchPull;
+  d.v *= TUNE.dragDamp;
   d.p += d.v;
   const minX = half - (tapeRange.max - tapeRange.min) * PX_PER_KG;
   d.p = Math.max(minX, Math.min(half, d.p));
@@ -760,6 +775,55 @@ function endTapeDrag(ev) {
 }
 tapeWrap.addEventListener('pointerup', endTapeDrag);
 tapeWrap.addEventListener('pointercancel', endTapeDrag);
+
+// ---- bảng chỉnh thông số kim: nổi phía dưới màn biểu đồ để vừa kéo thước vừa chỉnh ----
+const TUNE_FIELDS = [
+  ['Nấc thước', null],
+  ['notchPull', 'Độ cứng nấc', 0, 3, 0.05],
+  ['dragSpring', 'Độ bám tay', 0.05, 0.8, 0.01],
+  ['dragDamp', 'Giảm chấn thước', 0.2, 0.95, 0.01],
+  ['vibrate', 'Rung mỗi nấc (ms, 0 = tắt)', 0, 30, 1],
+  ['Kim', null],
+  ['pivot', 'Tâm xoay cách thước (px)', 0, 1500, 10],
+  ['needleGain', 'Độ nhạy kim', 0, 1.5, 0.005],
+  ['needleMax', 'Góc lệch tối đa (°)', 0.5, 30, 0.1],
+  ['needleSpring', 'Lò xo kim', 0.02, 0.5, 0.01],
+  ['needleDamp', 'Giảm chấn kim', 0.5, 0.98, 0.01],
+];
+const tunePanel = document.getElementById('tunePanel');
+const tuneRows = document.getElementById('tuneRows');
+const tuneDec = st => (String(st).split('.')[1] || '').length;
+function renderTune() {
+  tuneRows.innerHTML = TUNE_FIELDS.map(f => f[1] === null ? `<div class="tune-sec">${f[0]}</div>` :
+    `<label class="tune-row"><span class="tune-name">${f[1]}</span><b data-v="${f[0]}">${TUNE[f[0]].toFixed(tuneDec(f[4]))}</b>
+     <input type="range" data-k="${f[0]}" min="${f[2]}" max="${f[3]}" step="${f[4]}" value="${TUNE[f[0]]}"></label>`).join('');
+}
+function saveTune() { try { localStorage.setItem(TUNE_KEY, JSON.stringify(TUNE)); } catch (e) { /* ignore */ } }
+tuneRows.addEventListener('input', ev => {
+  const k = ev.target.dataset.k;
+  if (!k) return;
+  const f = TUNE_FIELDS.find(x => x[0] === k);
+  TUNE[k] = parseFloat(ev.target.value);
+  tuneRows.querySelector(`[data-v="${k}"]`).textContent = TUNE[k].toFixed(tuneDec(f[4]));
+  applyTune(); saveTune();
+});
+function tuneText() {
+  return 'Thông số kim: ' + TUNE_FIELDS.filter(f => f[1] !== null).map(f => `${f[0]}=${TUNE[f[0]]}`).join(', ');
+}
+document.getElementById('tuneOpenBtn').addEventListener('click', () => {
+  renderTune();
+  showScreen('chart');
+  tunePanel.classList.add('open');
+});
+document.getElementById('tuneCloseBtn').addEventListener('click', () => tunePanel.classList.remove('open'));
+document.getElementById('tuneResetBtn').addEventListener('click', () => {
+  TUNE = { ...TUNE_DEFAULTS }; applyTune(); saveTune(); renderTune();
+});
+document.getElementById('tuneCopyBtn').addEventListener('click', async () => {
+  const text = tuneText(), btn = document.getElementById('tuneCopyBtn');
+  try { await navigator.clipboard.writeText(text); btn.textContent = 'Đã chép ✓'; setTimeout(() => { btn.textContent = 'Chép số'; }, 1500); }
+  catch (e) { prompt('Chép đoạn này gửi cho Claude:', text); }
+});
 
 let journalLimit = 60;
 const journalRows = document.getElementById('journalRows');
