@@ -154,7 +154,7 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
   font-family:var(--num); font-size:26px; font-weight:600; outline:none;
 }
 .field .sub{font-size:12px; color:var(--text-dim); margin-top:4px;}
-.field .sub.plan{color:#f07a72;}
+.field .sub.plan{color:#f07a72; white-space:pre-line; line-height:1.5;}
 .field .sub.warn{color:#F2B84B;}
 .date-row{display:flex; align-items:center; gap:10px;}
 .field input[type=date]{

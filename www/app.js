@@ -185,6 +185,12 @@ function computePlan(list) {
   if (days < 1) return null; // hạn đã qua (hoặc là hôm nay) → không vẽ
   return { startT, startW: last.weight, endT, endW: goalWeight, perWeek: (goalWeight - last.weight) / days * 7, days };
 }
+// tốc độ mỗi ngày: dưới 1 kg thì ghi bằng gam cho dễ hình dung (vd "−57 g/ngày")
+function fmtDaily(perDay) {
+  const sign = perDay > 0.0005 ? '+' : perDay < -0.0005 ? '−' : '';
+  const a = Math.abs(perDay);
+  return a < 1 ? `${sign}${Math.round(a * 1000)} g/ngày` : `${sign}${a.toFixed(2).replace('.', ',')} kg/ngày`;
+}
 function fmtPace(perWeek) {
   return `${perWeek > 0.005 ? '+' : perWeek < -0.005 ? '−' : ''}${Math.abs(perWeek).toFixed(1).replace('.', ',')} kg/tuần`;
 }
@@ -519,9 +525,11 @@ function drawChart() {
     ctx.textAlign = 'right';
     const lw = ctx.measureText(label).width;
     const lx = Math.min(Math.max(ex + lw / 2, PAD.l + lw + 4), W - PAD.r - 4);
-    const ly = Math.min(Math.max((ex > W - PAD.r ? sy + (ey - sy) * ((W - PAD.r - sx) / (ex - sx)) : ey) + 10, PAD.t), H - PAD.b - 18);
-    ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = C.surface; ctx.strokeText(label, lx, ly);
-    ctx.fillStyle = C.plan; ctx.fillText(label, lx, ly);
+    const ly = Math.min(Math.max((ex > W - PAD.r ? sy + (ey - sy) * ((W - PAD.r - sx) / (ex - sx)) : ey) + 10, PAD.t), H - PAD.b - 34);
+    const daily = fmtDaily(plan.perWeek / 7);
+    ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = C.surface;
+    ctx.strokeText(label, lx, ly); ctx.strokeText(daily, lx, ly + 16);
+    ctx.fillStyle = C.plan; ctx.fillText(label, lx, ly); ctx.fillText(daily, lx, ly + 16);
   }
 
   // ---- points: viền màu nền để chấm tách khỏi đường; ẩn khi quá dày (zoom xa) ----
@@ -1172,7 +1180,9 @@ function refreshPlanNote(list) {
   planNote.textContent = Math.abs(diff) < 0.05
     ? 'Bạn đang ở đúng mục tiêu, chỉ cần giữ cân.'
     : `Cần ${verb} ${fmtKg(Math.abs(diff))} kg trong ${weeks >= 2 ? Math.round(weeks) + ' tuần' : Math.round(plan.days) + ' ngày'} → ${fmtPace(plan.perWeek)}`
-      + (Math.abs(plan.perWeek) > 1 ? ' (khá gắt, nên ≤ 1 kg/tuần)' : '');
+      + (Math.abs(plan.perWeek) > 1 ? ' (khá gắt, nên ≤ 1 kg/tuần)' : '')
+      + `\nMỗi ngày cần ${verb} ${fmtDaily(Math.abs(plan.perWeek) / 7).replace(/^[+−]/, '').replace('/ngày', '')}`
+      + ` (${(Math.abs(plan.perWeek) / 7).toFixed(3).replace('.', ',')} kg)`;
 }
 heightInput.addEventListener('change', () => {
   heightCm = heightInput.value === '' ? null : parseFloat(heightInput.value);
