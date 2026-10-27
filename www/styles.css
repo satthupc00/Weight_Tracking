@@ -55,7 +55,7 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
 .tapewrap{touch-action:none; cursor:grab;}
 .tapewrap.dragging{cursor:grabbing;}
 .needle{position:absolute; left:50%; top:0; bottom:0; width:3px; margin-left:-1.5px; background:var(--red); border-radius:0 0 2px 2px;
-        transform-origin:50% 0; will-change:transform; pointer-events:none;}
+        transform-origin:50% -520px; will-change:transform; pointer-events:none;} /* tâm xoay ở tít phía trên → kim lia theo cung tròn lớn */
 .tag{transition:transform .22s cubic-bezier(.34,1.56,.64,1); pointer-events:none;}
 .tapewrap.dragging .tag{transform:translateX(-50%) scale(1.1);}
 .tag{

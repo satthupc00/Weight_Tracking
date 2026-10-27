@@ -677,12 +677,13 @@ function needleLoop() {
   const x = tapeX();
   const v = needleSim.lastX === null ? 0 : x - needleSim.lastX; // px thước chạy trong 1 khung hình
   needleSim.lastX = x;
-  const target = Math.max(-30, Math.min(30, -v * 1.8)); // kim bị thước "kéo" lệch theo hướng chạy
-  needleSim.vel += (target - needleSim.ang) * 0.14;      // lò xo kéo kim về
-  needleSim.vel *= 0.84;                                 // giảm chấn → nảy vài cái rồi đứng
+  // tâm xoay của kim nằm rất xa phía trên (CSS transform-origin) → góc nhỏ nhưng cả cây kim lia ngang theo cung tròn lớn
+  const target = Math.max(-2.6, Math.min(2.6, -v * 0.12)); // kim bị thước "kéo" lệch theo hướng chạy
+  needleSim.vel += (target - needleSim.ang) * 0.11;      // lò xo kéo kim về (cần dài → lắc chậm hơn chút)
+  needleSim.vel *= 0.85;                                 // giảm chấn → nảy vài cái rồi đứng
   needleSim.ang += needleSim.vel;
-  needleEl.style.transform = `rotate(${needleSim.ang.toFixed(2)}deg)`;
-  const still = Math.abs(needleSim.ang) < 0.05 && Math.abs(needleSim.vel) < 0.05 && Math.abs(v) < 0.05;
+  needleEl.style.transform = `rotate(${needleSim.ang.toFixed(3)}deg)`;
+  const still = Math.abs(needleSim.ang) < 0.005 && Math.abs(needleSim.vel) < 0.005 && Math.abs(v) < 0.05;
   needleSim.calm = still ? needleSim.calm + 1 : 0;
   if (tapeDrag || needleSim.calm < 12) needleSim.raf = requestAnimationFrame(needleLoop);
   else { needleSim.raf = null; needleSim.lastX = null; needleEl.style.transform = ''; }
@@ -692,27 +693,62 @@ function wakeNeedle() {
   needleSim.lastX = null; needleSim.calm = 0;
   needleSim.raf = requestAnimationFrame(needleLoop);
 }
+// Kéo thước có "nấc" kiểu cơ khí: thước nối với ngón tay bằng 1 lò xo mềm, còn mỗi vạch 0,1 kg là 1 hõm
+// hút thước vào. Kéo chậm thì thước kẹt ở nấc, tới lúc lò xo đủ căng thì bật "tách" sang nấc kế.
+const NOTCH = PX_PER_KG / 10;   // 12 px = 0,1 kg
+const DRAG_SPRING = 0.24;       // độ cứng lò xo ngón tay → thước
+const NOTCH_PULL = 1.25;        // lực hút của hõm (lớn hơn lò xo → có hiện tượng kẹt-rồi-bật)
+const DRAG_DAMP = 0.62;         // giảm chấn: bật sang nấc mới gọn, không rung lâu
+let tapeTickAt = 0;
+function tapeKgAt(x) { return tapeRange.min + (tapeWrap.clientWidth / 2 - x) / PX_PER_KG; }
+function showDragKg(x) {
+  const kg10 = Math.round(tapeKgAt(x) * 10);
+  if (kg10 === tapeDrag.kg10) return;
+  tapeDrag.kg10 = kg10;
+  tapeTag.innerHTML = `${fmtKg(kg10 / 10)}<small>kg</small>`;
+  const now = performance.now(); // rung nhẹ mỗi nấc (máy Android), không rung dồn khi kéo rất nhanh
+  if (now - tapeTickAt > 35 && navigator.vibrate) { try { navigator.vibrate(4); } catch (e) { /* ignore */ } }
+  tapeTickAt = now;
+}
+function tapeDragLoop() {
+  const d = tapeDrag;
+  if (!d) return;
+  const half = tapeWrap.clientWidth / 2;
+  const phase = (d.p - half) / NOTCH * 2 * Math.PI;   // 0 đúng vạch, ±π giữa 2 vạch
+  d.v += (d.target - d.p) * DRAG_SPRING - Math.sin(phase) * NOTCH_PULL;
+  d.v *= DRAG_DAMP;
+  d.p += d.v;
+  const minX = half - (tapeRange.max - tapeRange.min) * PX_PER_KG;
+  d.p = Math.max(minX, Math.min(half, d.p));
+  tapeSvg.style.transform = `translateX(${d.p}px)`;
+  showDragKg(d.p);
+  d.raf = requestAnimationFrame(tapeDragLoop);
+}
 tapeWrap.addEventListener('pointerdown', (ev) => {
   if (!tapeRange || tapeHomeKg === null) return;
   tapeWrap.setPointerCapture(ev.pointerId);
   const x0 = tapeX();
   tapeSvg.style.transition = 'none';
   tapeSvg.style.transform = `translateX(${x0}px)`; // đang chạy hiệu ứng thì "chụp" lại đúng chỗ đó
-  tapeDrag = { id: ev.pointerId, startX: ev.clientX, x0 };
+  tapeDrag = { id: ev.pointerId, startX: ev.clientX, x0, target: x0, p: x0, v: 0, kg10: Math.round(tapeKgAt(x0) * 10), raf: null };
   tapeWrap.classList.add('dragging');
+  if (!REDUCED_MOTION) tapeDrag.raf = requestAnimationFrame(tapeDragLoop);
   wakeNeedle();
 });
 tapeWrap.addEventListener('pointermove', (ev) => {
   if (!tapeDrag || ev.pointerId !== tapeDrag.id) return;
   const half = tapeWrap.clientWidth / 2;
   const minX = half - (tapeRange.max - tapeRange.min) * PX_PER_KG, maxX = half;
-  const x = Math.max(minX, Math.min(maxX, tapeDrag.x0 + (ev.clientX - tapeDrag.startX)));
-  tapeSvg.style.transform = `translateX(${x}px)`;
-  const kg = tapeRange.min + (half - x) / PX_PER_KG;
-  tapeTag.innerHTML = `${fmtKg(Math.round(kg * 10) / 10)}<small>kg</small>`;
+  tapeDrag.target = Math.max(minX, Math.min(maxX, tapeDrag.x0 + (ev.clientX - tapeDrag.startX)));
+  if (REDUCED_MOTION) { // không hiệu ứng: nhảy thẳng tới vạch gần nhất
+    const x = half - Math.round((half - tapeDrag.target) / NOTCH) * NOTCH;
+    tapeSvg.style.transform = `translateX(${x}px)`;
+    showDragKg(x);
+  }
 });
 function endTapeDrag(ev) {
   if (!tapeDrag || ev.pointerId !== tapeDrag.id) return;
+  if (tapeDrag.raf) cancelAnimationFrame(tapeDrag.raf);
   tapeDrag = null;
   tapeWrap.classList.remove('dragging');
   // về chỗ cũ có nảy nhẹ (đường cong vượt quá rồi quay lại)
