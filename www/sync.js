@@ -3,7 +3,7 @@
 // Dữ liệu vẫn nằm trên máy là chính: mất mạng app chạy bình thường, có mạng thì tự đồng bộ.
 // Mỗi lần cân là 1 tài liệu users/{uid}/entries/{YYYY-MM-DD} {weight, note, updatedAt, deleted}.
 // Gộp dữ liệu: cùng 1 ngày, bản có updatedAt mới hơn thắng (kể cả bản "đã xoá").
-// Mục tiêu + chiều cao ở tài liệu users/{uid} {goal, height, settingsUpdatedAt}.
+// Mục tiêu + hạn chót + chiều cao ở tài liệu users/{uid} {goal, deadline, height, settingsUpdatedAt}.
 // Created by Mondiro
 // ===================================================================
 (function () {
@@ -173,18 +173,22 @@
       if (rts > lts) {
         goalWeight = sf.goal && sf.goal.nullValue === undefined ? num(sf.goal) || null : null;
         heightCm = sf.height && sf.height.nullValue === undefined ? num(sf.height) || null : null;
-        saveGoal(goalWeight); saveHeight(heightCm);
+        goalDeadline = sf.deadline && typeof sf.deadline.stringValue === 'string' && sf.deadline.stringValue ? sf.deadline.stringValue : null;
+        saveGoal(goalWeight); saveHeight(heightCm); saveDeadline(goalDeadline);
         lsSet(SETTINGS_TS_KEY, String(rts));
         const gi = $('goalInput'), hi = $('heightInput');
         if (gi) gi.value = goalWeight !== null ? goalWeight : '';
         if (hi) hi.value = heightCm !== null ? heightCm : '';
+        const di = $('deadlineInput');
+        if (di) di.value = goalDeadline || '';
         settingsChanged = true;
       } else if (lts > rts) {
-        await fsFetch(`${FS_BASE}/users/${auth.uid}?updateMask.fieldPaths=goal&updateMask.fieldPaths=height&updateMask.fieldPaths=settingsUpdatedAt`, {
+        await fsFetch(`${FS_BASE}/users/${auth.uid}?updateMask.fieldPaths=goal&updateMask.fieldPaths=height&updateMask.fieldPaths=deadline&updateMask.fieldPaths=settingsUpdatedAt`, {
           method: 'PATCH',
           body: JSON.stringify({ fields: {
             goal: goalWeight === null ? { nullValue: null } : { doubleValue: goalWeight },
             height: heightCm === null ? { nullValue: null } : { doubleValue: heightCm },
+            deadline: goalDeadline ? { stringValue: goalDeadline } : { nullValue: null },
             settingsUpdatedAt: { integerValue: String(lts) },
           } }),
         });

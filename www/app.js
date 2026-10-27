@@ -9,6 +9,7 @@
 const STORAGE_KEY = 'wt_entries_v1';
 const GOAL_KEY = 'wt_goal_v1';
 const HEIGHT_KEY = 'wt_height_v1';
+const DEADLINE_KEY = 'wt_deadline_v1'; // hạn chót đạt mục tiêu 'YYYY-MM-DD'
 const VIEW_KEY = 'wt_view_v1';
 
 function loadEntries() {
@@ -59,6 +60,14 @@ function saveHeight(v) {
   if (v === null || v === '' || isNaN(v)) localStorage.removeItem(HEIGHT_KEY);
   else localStorage.setItem(HEIGHT_KEY, String(v));
 }
+function loadDeadline() {
+  const v = localStorage.getItem(DEADLINE_KEY);
+  return v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+}
+function saveDeadline(v) {
+  if (!v) localStorage.removeItem(DEADLINE_KEY);
+  else localStorage.setItem(DEADLINE_KEY, v);
+}
 // persisted pan/zoom so the chart reopens exactly where it was left, instead of resetting every launch
 function loadViewState() {
   try {
@@ -80,10 +89,12 @@ function saveViewState() {
 // optional demo/preview seed (only used by the standalone preview build; harmless no-op otherwise)
 if (loadEntries().length === 0 && window.__WT_SEED_ENTRIES__) saveEntries(window.__WT_SEED_ENTRIES__);
 if (loadGoal() === null && window.__WT_SEED_GOAL__ != null) saveGoal(window.__WT_SEED_GOAL__);
+if (loadDeadline() === null && window.__WT_SEED_DEADLINE__) saveDeadline(window.__WT_SEED_DEADLINE__);
 
 let entries = loadEntries(); // {id, date:'YYYY-MM-DD', weight:Number, note:String}
 let goalWeight = loadGoal();
 let heightCm = loadHeight();
+let goalDeadline = loadDeadline();
 
 function sortedEntries() {
   return [...entries].sort((a, b) => a.date.localeCompare(b.date));
@@ -163,6 +174,19 @@ function computeTrend(list) {
   const lastIso = sorted[sorted.length-1].date;
   const lastWeight = sorted[sorted.length-1].weight;
   return { slopePerDay: slope, lastIso, lastWeight };
+}
+
+// Kế hoạch: đi từ lần cân mới nhất tới (hạn chót, mục tiêu) với tốc độ đều
+function computePlan(list) {
+  if (!goalWeight || !goalDeadline || !list.length) return null;
+  const last = list[list.length - 1];
+  const startT = toDate(last.date).getTime(), endT = toDate(goalDeadline).getTime();
+  const days = daysBetween(startT, endT);
+  if (days < 1) return null; // hạn đã qua (hoặc là hôm nay) → không vẽ
+  return { startT, startW: last.weight, endT, endW: goalWeight, perWeek: (goalWeight - last.weight) / days * 7, days };
+}
+function fmtPace(perWeek) {
+  return `${perWeek > 0.005 ? '+' : perWeek < -0.005 ? '−' : ''}${Math.abs(perWeek).toFixed(1).replace('.', ',')} kg/tuần`;
 }
 
 // ===================================================================
@@ -272,7 +296,7 @@ function visibleEntries() {
 const REDUCED_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const NUM_FONT = '"Barlow Condensed","Roboto Condensed","Arial Narrow",sans-serif';
 const C = { grid: '#212c3b', axis: '#72859a', line: '#3cc4b2', wash: '60,196,178', mon: '#e6483f', label: '#a7b4c1',
-            labelLast: '#e9edf1', goal: '#4fd6c4', trend: '#72859a', surface: '#121a26' };
+            labelLast: '#e9edf1', goal: '#4fd6c4', trend: '#72859a', surface: '#121a26', plan: '#e6483f' };
 
 // bước chia trục "đẹp" (0,1 · 0,2 · 0,25 · 0,5 · 1 · 2 · 5 ...)
 function niceStep(span, target) {
@@ -428,8 +452,11 @@ function drawChart() {
     ctx.restore();
     ctx.fillStyle = C.axis;
     ctx.font = `500 13px ${NUM_FONT}`;
-    ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
-    ctx.fillText(`mục tiêu ${goalWeight.toFixed(1).replace('.', ',')}`, W - PAD.r - 4, py - 6);
+    ctx.textBaseline = 'alphabetic';
+    // có hạn chót → đầu đường kế hoạch nằm trên vạch này ở bên phải, nên ghi nhãn sang trái
+    const left = !!computePlan(list);
+    ctx.textAlign = left ? 'left' : 'right';
+    ctx.fillText(`mục tiêu ${goalWeight.toFixed(1).replace('.', ',')}`, left ? PAD.l + 6 : W - PAD.r - 4, py - 6);
   }
 
   // ---- area wash + solid line through actual points ----
@@ -469,6 +496,32 @@ function drawChart() {
     const lx = Math.min(Math.max(endPx, PAD.l + 70), W - PAD.r - 4);
     ctx.textAlign = 'right';
     ctx.fillText(label, lx, Math.min(Math.max(endPy, PAD.t + 14), H - PAD.b - 4) - 10);
+  }
+
+  // ---- đường kế hoạch (đỏ, chấm đứt): từ lần cân mới nhất tới mục tiêu vào ngày hạn chót ----
+  const plan = computePlan(list);
+  if (plan) {
+    const sx = xToPx(plan.startT), sy = yToPx(plan.startW), ex = xToPx(plan.endT), ey = yToPx(plan.endW);
+    ctx.save();
+    ctx.setLineDash([7, 5]);
+    ctx.strokeStyle = C.plan; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+    ctx.setLineDash([]);
+    // mốc hạn chót: vòng đỏ + cờ nhỏ
+    ctx.beginPath(); ctx.arc(ex, ey, 5, 0, Math.PI * 2);
+    ctx.fillStyle = C.surface; ctx.fill(); ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.restore();
+    // nhãn tốc độ cần đạt, đặt dưới đầu đường (đường dự đoán xám ghi nhãn phía trên → không đè)
+    const d = toDate(goalDeadline);
+    const label = `${fmtPace(plan.perWeek)} · ${d.getDate()}/${d.getMonth() + 1}`;
+    ctx.font = `600 13px ${NUM_FONT}`;
+    ctx.textBaseline = 'top';
+    ctx.textAlign = 'right';
+    const lw = ctx.measureText(label).width;
+    const lx = Math.min(Math.max(ex + lw / 2, PAD.l + lw + 4), W - PAD.r - 4);
+    const ly = Math.min(Math.max((ex > W - PAD.r ? sy + (ey - sy) * ((W - PAD.r - sx) / (ex - sx)) : ey) + 10, PAD.t), H - PAD.b - 18);
+    ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = C.surface; ctx.strokeText(label, lx, ly);
+    ctx.fillStyle = C.plan; ctx.fillText(label, lx, ly);
   }
 
   // ---- points: viền màu nền để chấm tách khỏi đường; ẩn khi quá dày (zoom xa) ----
@@ -692,12 +745,14 @@ journalRows.addEventListener('click', (ev) => {
 
 function refreshSideUI() {
   const list = sortedEntries();
-  const sig = JSON.stringify([entries.length, list.length && list[list.length-1], goalWeight, heightCm, list.reduce((a, e) => a + e.weight + (e.note || '').length, 0)]);
+  const sig = JSON.stringify([entries.length, list.length && list[list.length-1], goalWeight, goalDeadline, heightCm, list.reduce((a, e) => a + e.weight + (e.note || '').length, 0)]);
   if (sig === sideSig) return;
   sideSig = sig;
   renderJournal(list);
   const goalLine = document.getElementById('goalLine'), bmiLine = document.getElementById('bmiLine'), weekLine = document.getElementById('weekLine');
-  goalLine.innerHTML = goalWeight ? `<i></i>Mục tiêu ${fmtKg(goalWeight)}` : '';
+  const dl = goalDeadline ? toDate(goalDeadline) : null;
+  goalLine.innerHTML = goalWeight ? `<i></i>Mục tiêu ${fmtKg(goalWeight)}${dl ? ` · ${dl.getDate()}/${dl.getMonth() + 1}` : ''}` : '';
+  refreshPlanNote(list);
   if (!list.length) { tapeTag.innerHTML = '--<small>kg</small>'; bmiLine.textContent = ''; weekLine.textContent = ''; return; }
   const last = list[list.length - 1], lastT = toDate(last.date).getTime();
   tapeTagHome = `${fmtKg(last.weight)}<small>kg</small>`;
@@ -1025,8 +1080,11 @@ function setRange(days, animate) {
   const DAY = 86400000;
   const lastT = toDate(list[list.length-1].date).getTime(), firstT = toDate(list[0].date).getTime();
   const xMin = days ? lastT - days * DAY : firstT - 2 * DAY;
-  const xMax = lastT + (days ? Math.min(30, Math.max(1, days / 7)) : 14) * DAY;
+  let xMax = lastT + (days ? Math.min(30, Math.max(1, days / 7)) : 14) * DAY;
+  const plan = days ? null : computePlan(list); // "Tất cả": thấy trọn đường kế hoạch tới hạn chót
+  if (plan) xMax = Math.max(xMax, plan.endT + Math.max(7, (plan.endT - firstT) / DAY * 0.1) * DAY);
   const ws = list.filter(e => { const t = toDate(e.date).getTime(); return t >= xMin && t <= xMax; }).map(e => e.weight);
+  if (plan) ws.push(plan.endW);
   let lo = Math.min(...ws), hi = Math.max(...ws);
   const pad = Math.max(0.4, (hi - lo) * 0.15);
   const target = { xMin, xMax, yMin: lo - pad, yMax: hi + pad + 0.2 };
@@ -1083,6 +1141,39 @@ goalInput.addEventListener('change', () => {
   touchSettings();
   drawChart();
 });
+const deadlineInput = document.getElementById('deadlineInput');
+const deadlineClear = document.getElementById('deadlineClear');
+deadlineInput.value = goalDeadline || '';
+deadlineClear.hidden = !goalDeadline;
+deadlineInput.addEventListener('change', () => {
+  goalDeadline = /^\d{4}-\d{2}-\d{2}$/.test(deadlineInput.value) ? deadlineInput.value : null;
+  saveDeadline(goalDeadline);
+  deadlineClear.hidden = !goalDeadline;
+  touchSettings();
+  drawChart();
+});
+deadlineClear.addEventListener('click', () => {
+  deadlineInput.value = '';
+  deadlineInput.dispatchEvent(new Event('change'));
+});
+// dòng giải thích dưới ô hạn chót: cần giảm/tăng bao nhiêu mỗi tuần
+function refreshPlanNote(list) {
+  const planNote = document.getElementById('planNote'), clearBtn = document.getElementById('deadlineClear');
+  if (!planNote) return;
+  clearBtn.hidden = !goalDeadline;
+  if (!goalDeadline) { planNote.textContent = 'Chọn ngày để hiện đường kế hoạch màu đỏ trên biểu đồ.'; planNote.className = 'sub'; return; }
+  if (!goalWeight) { planNote.textContent = 'Nhập mục tiêu cân nặng ở trên để tính tốc độ.'; planNote.className = 'sub'; return; }
+  if (!list.length) { planNote.textContent = 'Chưa có lần cân nào để tính.'; planNote.className = 'sub'; return; }
+  const plan = computePlan(list);
+  if (!plan) { planNote.textContent = 'Ngày này đã qua, hãy chọn ngày mới.'; planNote.className = 'sub warn'; return; }
+  const diff = plan.endW - plan.startW, weeks = plan.days / 7;
+  const verb = diff < 0 ? 'giảm' : 'tăng';
+  planNote.className = 'sub plan';
+  planNote.textContent = Math.abs(diff) < 0.05
+    ? 'Bạn đang ở đúng mục tiêu, chỉ cần giữ cân.'
+    : `Cần ${verb} ${fmtKg(Math.abs(diff))} kg trong ${weeks >= 2 ? Math.round(weeks) + ' tuần' : Math.round(plan.days) + ' ngày'} → ${fmtPace(plan.perWeek)}`
+      + (Math.abs(plan.perWeek) > 1 ? ' (khá gắt, nên ≤ 1 kg/tuần)' : '');
+}
 heightInput.addEventListener('change', () => {
   heightCm = heightInput.value === '' ? null : parseFloat(heightInput.value);
   saveHeight(heightCm);

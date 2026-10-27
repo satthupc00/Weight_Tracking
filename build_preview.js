@@ -20,7 +20,11 @@ function demoSeed() {
   }
   return out;
 }
-const seed = `window.__WT_SEED_ENTRIES__ = ${JSON.stringify(demoSeed())};`;
+const demo = demoSeed();
+// mục tiêu mẫu: thấp hơn lần cân cuối 4 kg, hạn chót 10 tuần sau ngày mở preview
+const seed = `window.__WT_SEED_ENTRIES__ = ${JSON.stringify(demo)};
+window.__WT_SEED_GOAL__ = ${Math.round((demo[demo.length - 1].weight - 4) * 10) / 10};
+window.__WT_SEED_DEADLINE__ = (d => { d.setDate(d.getDate() + 70); return d.toISOString().slice(0, 10); })(new Date());`;
 const js = fs.readFileSync('www/app.js', 'utf8');
 
 const out = html
