@@ -183,6 +183,14 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
   font-family:var(--num); font-size:26px; font-weight:600; outline:none;
 }
 .field .sub{font-size:12px; color:var(--text-dim); margin-top:4px;}
+.field .sub.plan{color:#f07a72;}
+.field .sub.warn{color:#F2B84B;}
+.date-row{display:flex; align-items:center; gap:10px;}
+.field input[type=date]{
+  flex:1; min-width:0; background:transparent; border:none; color:var(--text); color-scheme:dark;
+  font-family:var(--num); font-size:26px; font-weight:600; outline:none; padding:0;
+}
+.date-clear{width:34px; height:34px; border-radius:50%; border:none; background:rgba(255,255,255,.07); color:var(--text-dim); font-size:15px; flex-shrink:0;}
 .rowbtn{
   display:flex; align-items:center; justify-content:space-between;
   background:var(--slate); border-radius:14px; padding:15px 18px; margin-bottom:10px;
@@ -408,6 +416,14 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
         <input type="number" id="goalInput" step="0.1" placeholder="VD: 78.8">
       </div>
       <div class="field">
+        <label for="deadlineInput">Hạn chót đạt mục tiêu</label>
+        <div class="date-row">
+          <input type="date" id="deadlineInput">
+          <button class="date-clear" id="deadlineClear" type="button" aria-label="Bỏ hạn chót" hidden>✕</button>
+        </div>
+        <div class="sub" id="planNote"></div>
+      </div>
+      <div class="field">
         <label for="heightInput">Chiều cao (cm), để tính BMI, có thể bỏ trống</label>
         <input type="number" id="heightInput" step="0.1" placeholder="VD: 170">
       </div>
@@ -491,7 +507,9 @@ button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
 </div>
 
 <script>
-window.__WT_SEED_ENTRIES__ = [{"id":"2026-02-17","date":"2026-02-17","weight":77.9,"note":""},{"id":"2026-02-18","date":"2026-02-18","weight":78,"note":""},{"id":"2026-02-19","date":"2026-02-19","weight":78.3,"note":""},{"id":"2026-02-20","date":"2026-02-20","weight":78.4,"note":""},{"id":"2026-02-21","date":"2026-02-21","weight":78.3,"note":""},{"id":"2026-02-22","date":"2026-02-22","weight":78.1,"note":""},{"id":"2026-02-23","date":"2026-02-23","weight":78.3,"note":""},{"id":"2026-02-24","date":"2026-02-24","weight":78.5,"note":""},{"id":"2026-02-25","date":"2026-02-25","weight":78.4,"note":""},{"id":"2026-02-26","date":"2026-02-26","weight":78.4,"note":""},{"id":"2026-02-27","date":"2026-02-27","weight":78.2,"note":""},{"id":"2026-02-28","date":"2026-02-28","weight":78.2,"note":""},{"id":"2026-03-01","date":"2026-03-01","weight":78.2,"note":""},{"id":"2026-03-02","date":"2026-03-02","weight":78.1,"note":""},{"id":"2026-03-03","date":"2026-03-03","weight":78,"note":""},{"id":"2026-03-04","date":"2026-03-04","weight":78.2,"note":""},{"id":"2026-03-05","date":"2026-03-05","weight":78,"note":""},{"id":"2026-03-06","date":"2026-03-06","weight":78.1,"note":""},{"id":"2026-03-07","date":"2026-03-07","weight":78.1,"note":""},{"id":"2026-03-08","date":"2026-03-08","weight":78,"note":"ghi chú mẫu"},{"id":"2026-03-09","date":"2026-03-09","weight":77.8,"note":""},{"id":"2026-03-11","date":"2026-03-11","weight":77.7,"note":""},{"id":"2026-03-12","date":"2026-03-12","weight":77.9,"note":""},{"id":"2026-03-13","date":"2026-03-13","weight":78.1,"note":""},{"id":"2026-03-14","date":"2026-03-14","weight":77.9,"note":""},{"id":"2026-03-15","date":"2026-03-15","weight":77.9,"note":""},{"id":"2026-03-16","date":"2026-03-16","weight":77.9,"note":""},{"id":"2026-03-17","date":"2026-03-17","weight":77.9,"note":""},{"id":"2026-03-18","date":"2026-03-18","weight":77.7,"note":""},{"id":"2026-03-19","date":"2026-03-19","weight":77.6,"note":""},{"id":"2026-03-20","date":"2026-03-20","weight":77.5,"note":""},{"id":"2026-03-21","date":"2026-03-21","weight":77.5,"note":""},{"id":"2026-03-22","date":"2026-03-22","weight":77.6,"note":""},{"id":"2026-03-23","date":"2026-03-23","weight":77.8,"note":""},{"id":"2026-03-24","date":"2026-03-24","weight":77.6,"note":""},{"id":"2026-03-25","date":"2026-03-25","weight":77.8,"note":""},{"id":"2026-03-26","date":"2026-03-26","weight":77.6,"note":""},{"id":"2026-03-27","date":"2026-03-27","weight":77.6,"note":"ghi chú mẫu"},{"id":"2026-03-28","date":"2026-03-28","weight":77.7,"note":""},{"id":"2026-03-29","date":"2026-03-29","weight":78,"note":""},{"id":"2026-03-30","date":"2026-03-30","weight":77.9,"note":"ghi chú mẫu"},{"id":"2026-03-31","date":"2026-03-31","weight":78,"note":""},{"id":"2026-04-01","date":"2026-04-01","weight":78.1,"note":""},{"id":"2026-04-02","date":"2026-04-02","weight":78.4,"note":""},{"id":"2026-04-04","date":"2026-04-04","weight":78.2,"note":""},{"id":"2026-04-05","date":"2026-04-05","weight":78.1,"note":""},{"id":"2026-04-06","date":"2026-04-06","weight":78.1,"note":""},{"id":"2026-04-07","date":"2026-04-07","weight":77.9,"note":""},{"id":"2026-04-08","date":"2026-04-08","weight":78,"note":""},{"id":"2026-04-09","date":"2026-04-09","weight":78.2,"note":""},{"id":"2026-04-10","date":"2026-04-10","weight":78.2,"note":""},{"id":"2026-04-11","date":"2026-04-11","weight":78.1,"note":"ghi chú mẫu"},{"id":"2026-04-12","date":"2026-04-12","weight":78.1,"note":""},{"id":"2026-04-16","date":"2026-04-16","weight":78.2,"note":""},{"id":"2026-04-17","date":"2026-04-17","weight":78.1,"note":""},{"id":"2026-04-18","date":"2026-04-18","weight":78,"note":""},{"id":"2026-04-19","date":"2026-04-19","weight":77.9,"note":""},{"id":"2026-04-20","date":"2026-04-20","weight":77.8,"note":""},{"id":"2026-04-21","date":"2026-04-21","weight":77.6,"note":""},{"id":"2026-04-22","date":"2026-04-22","weight":77.9,"note":""},{"id":"2026-04-23","date":"2026-04-23","weight":78,"note":""},{"id":"2026-04-24","date":"2026-04-24","weight":78.1,"note":""},{"id":"2026-04-26","date":"2026-04-26","weight":77.9,"note":""},{"id":"2026-04-27","date":"2026-04-27","weight":77.9,"note":""},{"id":"2026-04-28","date":"2026-04-28","weight":78,"note":""},{"id":"2026-04-29","date":"2026-04-29","weight":77.9,"note":""},{"id":"2026-04-30","date":"2026-04-30","weight":77.9,"note":""},{"id":"2026-05-01","date":"2026-05-01","weight":77.9,"note":""},{"id":"2026-05-02","date":"2026-05-02","weight":77.8,"note":"ghi chú mẫu"},{"id":"2026-05-03","date":"2026-05-03","weight":77.8,"note":""},{"id":"2026-05-04","date":"2026-05-04","weight":77.5,"note":""},{"id":"2026-05-05","date":"2026-05-05","weight":77.3,"note":""},{"id":"2026-05-06","date":"2026-05-06","weight":77.6,"note":""},{"id":"2026-05-07","date":"2026-05-07","weight":77.8,"note":""},{"id":"2026-05-08","date":"2026-05-08","weight":78.1,"note":""},{"id":"2026-05-09","date":"2026-05-09","weight":78.1,"note":""},{"id":"2026-05-10","date":"2026-05-10","weight":77.9,"note":""},{"id":"2026-05-11","date":"2026-05-11","weight":77.6,"note":""},{"id":"2026-05-12","date":"2026-05-12","weight":77.9,"note":""},{"id":"2026-05-13","date":"2026-05-13","weight":77.9,"note":""},{"id":"2026-05-14","date":"2026-05-14","weight":77.7,"note":""},{"id":"2026-05-15","date":"2026-05-15","weight":77.9,"note":""},{"id":"2026-05-16","date":"2026-05-16","weight":78.1,"note":""},{"id":"2026-05-17","date":"2026-05-17","weight":78.3,"note":""},{"id":"2026-05-18","date":"2026-05-18","weight":78.5,"note":""},{"id":"2026-05-19","date":"2026-05-19","weight":78.3,"note":""},{"id":"2026-05-20","date":"2026-05-20","weight":78.2,"note":""},{"id":"2026-05-21","date":"2026-05-21","weight":78,"note":""},{"id":"2026-05-22","date":"2026-05-22","weight":78.2,"note":""},{"id":"2026-05-24","date":"2026-05-24","weight":78.4,"note":""},{"id":"2026-05-25","date":"2026-05-25","weight":78.5,"note":""},{"id":"2026-05-26","date":"2026-05-26","weight":78.4,"note":""},{"id":"2026-05-27","date":"2026-05-27","weight":78.4,"note":""},{"id":"2026-05-28","date":"2026-05-28","weight":78.4,"note":""},{"id":"2026-05-29","date":"2026-05-29","weight":78.1,"note":""},{"id":"2026-05-30","date":"2026-05-30","weight":78.3,"note":""},{"id":"2026-05-31","date":"2026-05-31","weight":78.5,"note":""},{"id":"2026-06-01","date":"2026-06-01","weight":78.5,"note":""},{"id":"2026-06-02","date":"2026-06-02","weight":78.5,"note":""},{"id":"2026-06-03","date":"2026-06-03","weight":78.5,"note":""},{"id":"2026-06-04","date":"2026-06-04","weight":78.4,"note":""},{"id":"2026-06-06","date":"2026-06-06","weight":78.6,"note":""},{"id":"2026-06-07","date":"2026-06-07","weight":78.3,"note":""},{"id":"2026-06-08","date":"2026-06-08","weight":78.5,"note":""},{"id":"2026-06-09","date":"2026-06-09","weight":78.7,"note":""},{"id":"2026-06-10","date":"2026-06-10","weight":79,"note":""},{"id":"2026-06-11","date":"2026-06-11","weight":78.8,"note":""},{"id":"2026-06-12","date":"2026-06-12","weight":79,"note":""},{"id":"2026-06-13","date":"2026-06-13","weight":78.9,"note":"ghi chú mẫu"},{"id":"2026-06-14","date":"2026-06-14","weight":78.7,"note":""},{"id":"2026-06-15","date":"2026-06-15","weight":78.7,"note":""},{"id":"2026-06-17","date":"2026-06-17","weight":78.7,"note":""},{"id":"2026-06-18","date":"2026-06-18","weight":78.9,"note":""},{"id":"2026-06-19","date":"2026-06-19","weight":78.7,"note":""},{"id":"2026-06-22","date":"2026-06-22","weight":78.7,"note":""},{"id":"2026-06-23","date":"2026-06-23","weight":78.6,"note":""},{"id":"2026-06-25","date":"2026-06-25","weight":78.6,"note":""},{"id":"2026-06-27","date":"2026-06-27","weight":78.5,"note":""},{"id":"2026-06-28","date":"2026-06-28","weight":78.3,"note":""},{"id":"2026-06-29","date":"2026-06-29","weight":78.1,"note":""},{"id":"2026-06-30","date":"2026-06-30","weight":77.8,"note":""},{"id":"2026-07-01","date":"2026-07-01","weight":77.8,"note":"ghi chú mẫu"},{"id":"2026-07-03","date":"2026-07-03","weight":77.9,"note":""},{"id":"2026-07-04","date":"2026-07-04","weight":77.8,"note":""},{"id":"2026-07-05","date":"2026-07-05","weight":77.9,"note":"ghi chú mẫu"},{"id":"2026-07-06","date":"2026-07-06","weight":77.8,"note":""},{"id":"2026-07-07","date":"2026-07-07","weight":77.8,"note":""},{"id":"2026-07-09","date":"2026-07-09","weight":77.6,"note":""},{"id":"2026-07-10","date":"2026-07-10","weight":77.8,"note":""},{"id":"2026-07-12","date":"2026-07-12","weight":78.1,"note":""},{"id":"2026-07-13","date":"2026-07-13","weight":78.4,"note":""},{"id":"2026-07-15","date":"2026-07-15","weight":78.5,"note":""},{"id":"2026-07-16","date":"2026-07-16","weight":78.5,"note":""},{"id":"2026-07-17","date":"2026-07-17","weight":78.2,"note":""},{"id":"2026-07-18","date":"2026-07-18","weight":78.4,"note":""},{"id":"2026-07-19","date":"2026-07-19","weight":78.4,"note":""},{"id":"2026-07-20","date":"2026-07-20","weight":78.3,"note":""},{"id":"2026-07-21","date":"2026-07-21","weight":78.3,"note":""},{"id":"2026-07-22","date":"2026-07-22","weight":78.6,"note":""},{"id":"2026-07-23","date":"2026-07-23","weight":78.6,"note":""},{"id":"2026-07-24","date":"2026-07-24","weight":78.8,"note":""},{"id":"2026-07-25","date":"2026-07-25","weight":78.6,"note":""},{"id":"2026-07-26","date":"2026-07-26","weight":78.5,"note":""},{"id":"2026-07-28","date":"2026-07-28","weight":78.4,"note":""},{"id":"2026-07-30","date":"2026-07-30","weight":78.2,"note":"ghi chú mẫu"},{"id":"2026-07-31","date":"2026-07-31","weight":78.1,"note":""},{"id":"2026-08-01","date":"2026-08-01","weight":78.4,"note":""},{"id":"2026-08-02","date":"2026-08-02","weight":78.4,"note":""},{"id":"2026-08-03","date":"2026-08-03","weight":78.5,"note":""},{"id":"2026-08-04","date":"2026-08-04","weight":78.7,"note":""},{"id":"2026-08-05","date":"2026-08-05","weight":78.8,"note":""},{"id":"2026-08-06","date":"2026-08-06","weight":78.6,"note":""},{"id":"2026-08-07","date":"2026-08-07","weight":78.6,"note":"ghi chú mẫu"},{"id":"2026-08-08","date":"2026-08-08","weight":78.6,"note":""},{"id":"2026-08-09","date":"2026-08-09","weight":78.6,"note":""},{"id":"2026-08-10","date":"2026-08-10","weight":78.4,"note":""},{"id":"2026-08-11","date":"2026-08-11","weight":78.1,"note":""},{"id":"2026-08-12","date":"2026-08-12","weight":77.9,"note":""},{"id":"2026-08-13","date":"2026-08-13","weight":77.9,"note":""},{"id":"2026-08-14","date":"2026-08-14","weight":77.6,"note":""},{"id":"2026-08-16","date":"2026-08-16","weight":77.4,"note":""},{"id":"2026-08-17","date":"2026-08-17","weight":77.1,"note":""},{"id":"2026-08-18","date":"2026-08-18","weight":77.4,"note":""},{"id":"2026-08-19","date":"2026-08-19","weight":77.4,"note":""},{"id":"2026-08-21","date":"2026-08-21","weight":77.4,"note":""},{"id":"2026-08-22","date":"2026-08-22","weight":77.6,"note":""},{"id":"2026-08-23","date":"2026-08-23","weight":77.7,"note":""},{"id":"2026-08-24","date":"2026-08-24","weight":77.7,"note":""},{"id":"2026-08-26","date":"2026-08-26","weight":77.6,"note":""},{"id":"2026-08-27","date":"2026-08-27","weight":77.4,"note":""},{"id":"2026-08-28","date":"2026-08-28","weight":77.6,"note":""},{"id":"2026-08-29","date":"2026-08-29","weight":77.4,"note":""},{"id":"2026-08-31","date":"2026-08-31","weight":77.6,"note":""},{"id":"2026-09-01","date":"2026-09-01","weight":77.6,"note":""},{"id":"2026-09-02","date":"2026-09-02","weight":77.4,"note":""},{"id":"2026-09-03","date":"2026-09-03","weight":77.7,"note":""},{"id":"2026-09-04","date":"2026-09-04","weight":77.9,"note":"ghi chú mẫu"},{"id":"2026-09-05","date":"2026-09-05","weight":78.2,"note":""},{"id":"2026-09-06","date":"2026-09-06","weight":78,"note":""},{"id":"2026-09-07","date":"2026-09-07","weight":77.9,"note":""},{"id":"2026-09-08","date":"2026-09-08","weight":78.1,"note":""},{"id":"2026-09-09","date":"2026-09-09","weight":78.2,"note":""},{"id":"2026-09-10","date":"2026-09-10","weight":78.1,"note":""},{"id":"2026-09-11","date":"2026-09-11","weight":78,"note":""},{"id":"2026-09-12","date":"2026-09-12","weight":77.9,"note":""},{"id":"2026-09-13","date":"2026-09-13","weight":78.2,"note":""},{"id":"2026-09-14","date":"2026-09-14","weight":77.9,"note":""},{"id":"2026-09-15","date":"2026-09-15","weight":78.2,"note":""},{"id":"2026-09-16","date":"2026-09-16","weight":78,"note":""},{"id":"2026-09-17","date":"2026-09-17","weight":78,"note":""},{"id":"2026-09-18","date":"2026-09-18","weight":78.3,"note":"ghi chú mẫu"},{"id":"2026-09-19","date":"2026-09-19","weight":78.1,"note":""},{"id":"2026-09-20","date":"2026-09-20","weight":78.3,"note":""},{"id":"2026-09-21","date":"2026-09-21","weight":78.2,"note":""},{"id":"2026-09-22","date":"2026-09-22","weight":78.4,"note":""},{"id":"2026-09-23","date":"2026-09-23","weight":78.3,"note":""},{"id":"2026-09-24","date":"2026-09-24","weight":78.4,"note":""},{"id":"2026-09-25","date":"2026-09-25","weight":78.6,"note":""},{"id":"2026-09-26","date":"2026-09-26","weight":78.7,"note":""},{"id":"2026-09-27","date":"2026-09-27","weight":78.8,"note":""},{"id":"2026-09-28","date":"2026-09-28","weight":78.6,"note":""},{"id":"2026-09-29","date":"2026-09-29","weight":78.8,"note":""},{"id":"2026-09-30","date":"2026-09-30","weight":79,"note":""},{"id":"2026-10-01","date":"2026-10-01","weight":79.1,"note":""},{"id":"2026-10-02","date":"2026-10-02","weight":78.8,"note":""},{"id":"2026-10-03","date":"2026-10-03","weight":78.8,"note":""},{"id":"2026-10-04","date":"2026-10-04","weight":79,"note":""},{"id":"2026-10-05","date":"2026-10-05","weight":79.3,"note":""},{"id":"2026-10-06","date":"2026-10-06","weight":79.6,"note":""},{"id":"2026-10-07","date":"2026-10-07","weight":79.5,"note":""},{"id":"2026-10-08","date":"2026-10-08","weight":79.4,"note":""},{"id":"2026-10-09","date":"2026-10-09","weight":79.2,"note":""},{"id":"2026-10-10","date":"2026-10-10","weight":79.4,"note":""},{"id":"2026-10-11","date":"2026-10-11","weight":79.6,"note":""},{"id":"2026-10-12","date":"2026-10-12","weight":79.9,"note":""},{"id":"2026-10-13","date":"2026-10-13","weight":79.6,"note":""},{"id":"2026-10-15","date":"2026-10-15","weight":79.5,"note":""}];
+window.__WT_SEED_ENTRIES__ = [{"id":"2026-03-01","date":"2026-03-01","weight":77.9,"note":""},{"id":"2026-03-02","date":"2026-03-02","weight":78,"note":""},{"id":"2026-03-03","date":"2026-03-03","weight":78.3,"note":""},{"id":"2026-03-04","date":"2026-03-04","weight":78.4,"note":""},{"id":"2026-03-05","date":"2026-03-05","weight":78.3,"note":""},{"id":"2026-03-06","date":"2026-03-06","weight":78.1,"note":""},{"id":"2026-03-07","date":"2026-03-07","weight":78.3,"note":""},{"id":"2026-03-08","date":"2026-03-08","weight":78.5,"note":""},{"id":"2026-03-09","date":"2026-03-09","weight":78.4,"note":""},{"id":"2026-03-10","date":"2026-03-10","weight":78.4,"note":""},{"id":"2026-03-11","date":"2026-03-11","weight":78.2,"note":""},{"id":"2026-03-12","date":"2026-03-12","weight":78.2,"note":""},{"id":"2026-03-13","date":"2026-03-13","weight":78.2,"note":""},{"id":"2026-03-14","date":"2026-03-14","weight":78.1,"note":""},{"id":"2026-03-15","date":"2026-03-15","weight":78,"note":""},{"id":"2026-03-16","date":"2026-03-16","weight":78.2,"note":""},{"id":"2026-03-17","date":"2026-03-17","weight":78,"note":""},{"id":"2026-03-18","date":"2026-03-18","weight":78.1,"note":""},{"id":"2026-03-19","date":"2026-03-19","weight":78.1,"note":""},{"id":"2026-03-20","date":"2026-03-20","weight":78,"note":"ghi chú mẫu"},{"id":"2026-03-21","date":"2026-03-21","weight":77.8,"note":""},{"id":"2026-03-23","date":"2026-03-23","weight":77.7,"note":""},{"id":"2026-03-24","date":"2026-03-24","weight":77.9,"note":""},{"id":"2026-03-25","date":"2026-03-25","weight":78.1,"note":""},{"id":"2026-03-26","date":"2026-03-26","weight":77.9,"note":""},{"id":"2026-03-27","date":"2026-03-27","weight":77.9,"note":""},{"id":"2026-03-28","date":"2026-03-28","weight":77.9,"note":""},{"id":"2026-03-29","date":"2026-03-29","weight":77.9,"note":""},{"id":"2026-03-30","date":"2026-03-30","weight":77.7,"note":""},{"id":"2026-03-31","date":"2026-03-31","weight":77.6,"note":""},{"id":"2026-04-01","date":"2026-04-01","weight":77.5,"note":""},{"id":"2026-04-02","date":"2026-04-02","weight":77.5,"note":""},{"id":"2026-04-03","date":"2026-04-03","weight":77.6,"note":""},{"id":"2026-04-04","date":"2026-04-04","weight":77.8,"note":""},{"id":"2026-04-05","date":"2026-04-05","weight":77.6,"note":""},{"id":"2026-04-06","date":"2026-04-06","weight":77.8,"note":""},{"id":"2026-04-07","date":"2026-04-07","weight":77.6,"note":""},{"id":"2026-04-08","date":"2026-04-08","weight":77.6,"note":"ghi chú mẫu"},{"id":"2026-04-09","date":"2026-04-09","weight":77.7,"note":""},{"id":"2026-04-10","date":"2026-04-10","weight":78,"note":""},{"id":"2026-04-11","date":"2026-04-11","weight":77.9,"note":"ghi chú mẫu"},{"id":"2026-04-12","date":"2026-04-12","weight":78,"note":""},{"id":"2026-04-13","date":"2026-04-13","weight":78.1,"note":""},{"id":"2026-04-14","date":"2026-04-14","weight":78.4,"note":""},{"id":"2026-04-16","date":"2026-04-16","weight":78.2,"note":""},{"id":"2026-04-17","date":"2026-04-17","weight":78.1,"note":""},{"id":"2026-04-18","date":"2026-04-18","weight":78.1,"note":""},{"id":"2026-04-19","date":"2026-04-19","weight":77.9,"note":""},{"id":"2026-04-20","date":"2026-04-20","weight":78,"note":""},{"id":"2026-04-21","date":"2026-04-21","weight":78.2,"note":""},{"id":"2026-04-22","date":"2026-04-22","weight":78.2,"note":""},{"id":"2026-04-23","date":"2026-04-23","weight":78.1,"note":"ghi chú mẫu"},{"id":"2026-04-24","date":"2026-04-24","weight":78.1,"note":""},{"id":"2026-04-28","date":"2026-04-28","weight":78.2,"note":""},{"id":"2026-04-29","date":"2026-04-29","weight":78.1,"note":""},{"id":"2026-04-30","date":"2026-04-30","weight":78,"note":""},{"id":"2026-05-01","date":"2026-05-01","weight":77.9,"note":""},{"id":"2026-05-02","date":"2026-05-02","weight":77.8,"note":""},{"id":"2026-05-03","date":"2026-05-03","weight":77.6,"note":""},{"id":"2026-05-04","date":"2026-05-04","weight":77.9,"note":""},{"id":"2026-05-05","date":"2026-05-05","weight":78,"note":""},{"id":"2026-05-06","date":"2026-05-06","weight":78.1,"note":""},{"id":"2026-05-08","date":"2026-05-08","weight":77.9,"note":""},{"id":"2026-05-09","date":"2026-05-09","weight":77.9,"note":""},{"id":"2026-05-10","date":"2026-05-10","weight":78,"note":""},{"id":"2026-05-11","date":"2026-05-11","weight":77.9,"note":""},{"id":"2026-05-12","date":"2026-05-12","weight":77.9,"note":""},{"id":"2026-05-13","date":"2026-05-13","weight":77.9,"note":""},{"id":"2026-05-14","date":"2026-05-14","weight":77.8,"note":"ghi chú mẫu"},{"id":"2026-05-15","date":"2026-05-15","weight":77.8,"note":""},{"id":"2026-05-16","date":"2026-05-16","weight":77.5,"note":""},{"id":"2026-05-17","date":"2026-05-17","weight":77.3,"note":""},{"id":"2026-05-18","date":"2026-05-18","weight":77.6,"note":""},{"id":"2026-05-19","date":"2026-05-19","weight":77.8,"note":""},{"id":"2026-05-20","date":"2026-05-20","weight":78.1,"note":""},{"id":"2026-05-21","date":"2026-05-21","weight":78.1,"note":""},{"id":"2026-05-22","date":"2026-05-22","weight":77.9,"note":""},{"id":"2026-05-23","date":"2026-05-23","weight":77.6,"note":""},{"id":"2026-05-24","date":"2026-05-24","weight":77.9,"note":""},{"id":"2026-05-25","date":"2026-05-25","weight":77.9,"note":""},{"id":"2026-05-26","date":"2026-05-26","weight":77.7,"note":""},{"id":"2026-05-27","date":"2026-05-27","weight":77.9,"note":""},{"id":"2026-05-28","date":"2026-05-28","weight":78.1,"note":""},{"id":"2026-05-29","date":"2026-05-29","weight":78.3,"note":""},{"id":"2026-05-30","date":"2026-05-30","weight":78.5,"note":""},{"id":"2026-05-31","date":"2026-05-31","weight":78.3,"note":""},{"id":"2026-06-01","date":"2026-06-01","weight":78.2,"note":""},{"id":"2026-06-02","date":"2026-06-02","weight":78,"note":""},{"id":"2026-06-03","date":"2026-06-03","weight":78.2,"note":""},{"id":"2026-06-05","date":"2026-06-05","weight":78.4,"note":""},{"id":"2026-06-06","date":"2026-06-06","weight":78.5,"note":""},{"id":"2026-06-07","date":"2026-06-07","weight":78.4,"note":""},{"id":"2026-06-08","date":"2026-06-08","weight":78.4,"note":""},{"id":"2026-06-09","date":"2026-06-09","weight":78.4,"note":""},{"id":"2026-06-10","date":"2026-06-10","weight":78.1,"note":""},{"id":"2026-06-11","date":"2026-06-11","weight":78.3,"note":""},{"id":"2026-06-12","date":"2026-06-12","weight":78.5,"note":""},{"id":"2026-06-13","date":"2026-06-13","weight":78.5,"note":""},{"id":"2026-06-14","date":"2026-06-14","weight":78.5,"note":""},{"id":"2026-06-15","date":"2026-06-15","weight":78.5,"note":""},{"id":"2026-06-16","date":"2026-06-16","weight":78.4,"note":""},{"id":"2026-06-18","date":"2026-06-18","weight":78.6,"note":""},{"id":"2026-06-19","date":"2026-06-19","weight":78.3,"note":""},{"id":"2026-06-20","date":"2026-06-20","weight":78.5,"note":""},{"id":"2026-06-21","date":"2026-06-21","weight":78.7,"note":""},{"id":"2026-06-22","date":"2026-06-22","weight":79,"note":""},{"id":"2026-06-23","date":"2026-06-23","weight":78.8,"note":""},{"id":"2026-06-24","date":"2026-06-24","weight":79,"note":""},{"id":"2026-06-25","date":"2026-06-25","weight":78.9,"note":"ghi chú mẫu"},{"id":"2026-06-26","date":"2026-06-26","weight":78.7,"note":""},{"id":"2026-06-27","date":"2026-06-27","weight":78.7,"note":""},{"id":"2026-06-29","date":"2026-06-29","weight":78.7,"note":""},{"id":"2026-06-30","date":"2026-06-30","weight":78.9,"note":""},{"id":"2026-07-01","date":"2026-07-01","weight":78.7,"note":""},{"id":"2026-07-04","date":"2026-07-04","weight":78.7,"note":""},{"id":"2026-07-05","date":"2026-07-05","weight":78.6,"note":""},{"id":"2026-07-07","date":"2026-07-07","weight":78.6,"note":""},{"id":"2026-07-09","date":"2026-07-09","weight":78.5,"note":""},{"id":"2026-07-10","date":"2026-07-10","weight":78.3,"note":""},{"id":"2026-07-11","date":"2026-07-11","weight":78.1,"note":""},{"id":"2026-07-12","date":"2026-07-12","weight":77.8,"note":""},{"id":"2026-07-13","date":"2026-07-13","weight":77.8,"note":"ghi chú mẫu"},{"id":"2026-07-15","date":"2026-07-15","weight":77.9,"note":""},{"id":"2026-07-16","date":"2026-07-16","weight":77.8,"note":""},{"id":"2026-07-17","date":"2026-07-17","weight":77.9,"note":"ghi chú mẫu"},{"id":"2026-07-18","date":"2026-07-18","weight":77.8,"note":""},{"id":"2026-07-19","date":"2026-07-19","weight":77.8,"note":""},{"id":"2026-07-21","date":"2026-07-21","weight":77.6,"note":""},{"id":"2026-07-22","date":"2026-07-22","weight":77.8,"note":""},{"id":"2026-07-24","date":"2026-07-24","weight":78.1,"note":""},{"id":"2026-07-25","date":"2026-07-25","weight":78.4,"note":""},{"id":"2026-07-27","date":"2026-07-27","weight":78.5,"note":""},{"id":"2026-07-28","date":"2026-07-28","weight":78.5,"note":""},{"id":"2026-07-29","date":"2026-07-29","weight":78.2,"note":""},{"id":"2026-07-30","date":"2026-07-30","weight":78.4,"note":""},{"id":"2026-07-31","date":"2026-07-31","weight":78.4,"note":""},{"id":"2026-08-01","date":"2026-08-01","weight":78.3,"note":""},{"id":"2026-08-02","date":"2026-08-02","weight":78.3,"note":""},{"id":"2026-08-03","date":"2026-08-03","weight":78.6,"note":""},{"id":"2026-08-04","date":"2026-08-04","weight":78.6,"note":""},{"id":"2026-08-05","date":"2026-08-05","weight":78.8,"note":""},{"id":"2026-08-06","date":"2026-08-06","weight":78.6,"note":""},{"id":"2026-08-07","date":"2026-08-07","weight":78.5,"note":""},{"id":"2026-08-09","date":"2026-08-09","weight":78.4,"note":""},{"id":"2026-08-11","date":"2026-08-11","weight":78.2,"note":"ghi chú mẫu"},{"id":"2026-08-12","date":"2026-08-12","weight":78.1,"note":""},{"id":"2026-08-13","date":"2026-08-13","weight":78.4,"note":""},{"id":"2026-08-14","date":"2026-08-14","weight":78.4,"note":""},{"id":"2026-08-15","date":"2026-08-15","weight":78.5,"note":""},{"id":"2026-08-16","date":"2026-08-16","weight":78.7,"note":""},{"id":"2026-08-17","date":"2026-08-17","weight":78.8,"note":""},{"id":"2026-08-18","date":"2026-08-18","weight":78.6,"note":""},{"id":"2026-08-19","date":"2026-08-19","weight":78.6,"note":"ghi chú mẫu"},{"id":"2026-08-20","date":"2026-08-20","weight":78.6,"note":""},{"id":"2026-08-21","date":"2026-08-21","weight":78.6,"note":""},{"id":"2026-08-22","date":"2026-08-22","weight":78.4,"note":""},{"id":"2026-08-23","date":"2026-08-23","weight":78.1,"note":""},{"id":"2026-08-24","date":"2026-08-24","weight":77.9,"note":""},{"id":"2026-08-25","date":"2026-08-25","weight":77.9,"note":""},{"id":"2026-08-26","date":"2026-08-26","weight":77.6,"note":""},{"id":"2026-08-28","date":"2026-08-28","weight":77.4,"note":""},{"id":"2026-08-29","date":"2026-08-29","weight":77.1,"note":""},{"id":"2026-08-30","date":"2026-08-30","weight":77.4,"note":""},{"id":"2026-08-31","date":"2026-08-31","weight":77.4,"note":""},{"id":"2026-09-02","date":"2026-09-02","weight":77.4,"note":""},{"id":"2026-09-03","date":"2026-09-03","weight":77.6,"note":""},{"id":"2026-09-04","date":"2026-09-04","weight":77.7,"note":""},{"id":"2026-09-05","date":"2026-09-05","weight":77.7,"note":""},{"id":"2026-09-07","date":"2026-09-07","weight":77.6,"note":""},{"id":"2026-09-08","date":"2026-09-08","weight":77.4,"note":""},{"id":"2026-09-09","date":"2026-09-09","weight":77.6,"note":""},{"id":"2026-09-10","date":"2026-09-10","weight":77.4,"note":""},{"id":"2026-09-12","date":"2026-09-12","weight":77.6,"note":""},{"id":"2026-09-13","date":"2026-09-13","weight":77.6,"note":""},{"id":"2026-09-14","date":"2026-09-14","weight":77.4,"note":""},{"id":"2026-09-15","date":"2026-09-15","weight":77.7,"note":""},{"id":"2026-09-16","date":"2026-09-16","weight":77.9,"note":"ghi chú mẫu"},{"id":"2026-09-17","date":"2026-09-17","weight":78.2,"note":""},{"id":"2026-09-18","date":"2026-09-18","weight":78,"note":""},{"id":"2026-09-19","date":"2026-09-19","weight":77.9,"note":""},{"id":"2026-09-20","date":"2026-09-20","weight":78.1,"note":""},{"id":"2026-09-21","date":"2026-09-21","weight":78.2,"note":""},{"id":"2026-09-22","date":"2026-09-22","weight":78.1,"note":""},{"id":"2026-09-23","date":"2026-09-23","weight":78,"note":""},{"id":"2026-09-24","date":"2026-09-24","weight":77.9,"note":""},{"id":"2026-09-25","date":"2026-09-25","weight":78.2,"note":""},{"id":"2026-09-26","date":"2026-09-26","weight":77.9,"note":""},{"id":"2026-09-27","date":"2026-09-27","weight":78.2,"note":""},{"id":"2026-09-28","date":"2026-09-28","weight":78,"note":""},{"id":"2026-09-29","date":"2026-09-29","weight":78,"note":""},{"id":"2026-09-30","date":"2026-09-30","weight":78.3,"note":"ghi chú mẫu"},{"id":"2026-10-01","date":"2026-10-01","weight":78.1,"note":""},{"id":"2026-10-02","date":"2026-10-02","weight":78.3,"note":""},{"id":"2026-10-03","date":"2026-10-03","weight":78.2,"note":""},{"id":"2026-10-04","date":"2026-10-04","weight":78.4,"note":""},{"id":"2026-10-05","date":"2026-10-05","weight":78.3,"note":""},{"id":"2026-10-06","date":"2026-10-06","weight":78.4,"note":""},{"id":"2026-10-07","date":"2026-10-07","weight":78.6,"note":""},{"id":"2026-10-08","date":"2026-10-08","weight":78.7,"note":""},{"id":"2026-10-09","date":"2026-10-09","weight":78.8,"note":""},{"id":"2026-10-10","date":"2026-10-10","weight":78.6,"note":""},{"id":"2026-10-11","date":"2026-10-11","weight":78.8,"note":""},{"id":"2026-10-12","date":"2026-10-12","weight":79,"note":""},{"id":"2026-10-13","date":"2026-10-13","weight":79.1,"note":""},{"id":"2026-10-14","date":"2026-10-14","weight":78.8,"note":""},{"id":"2026-10-15","date":"2026-10-15","weight":78.8,"note":""},{"id":"2026-10-16","date":"2026-10-16","weight":79,"note":""},{"id":"2026-10-17","date":"2026-10-17","weight":79.3,"note":""},{"id":"2026-10-18","date":"2026-10-18","weight":79.6,"note":""},{"id":"2026-10-19","date":"2026-10-19","weight":79.5,"note":""},{"id":"2026-10-20","date":"2026-10-20","weight":79.4,"note":""},{"id":"2026-10-21","date":"2026-10-21","weight":79.2,"note":""},{"id":"2026-10-22","date":"2026-10-22","weight":79.4,"note":""},{"id":"2026-10-23","date":"2026-10-23","weight":79.6,"note":""},{"id":"2026-10-24","date":"2026-10-24","weight":79.9,"note":""},{"id":"2026-10-25","date":"2026-10-25","weight":79.6,"note":""},{"id":"2026-10-27","date":"2026-10-27","weight":79.5,"note":""}];
+window.__WT_SEED_GOAL__ = 75.5;
+window.__WT_SEED_DEADLINE__ = (d => { d.setDate(d.getDate() + 70); return d.toISOString().slice(0, 10); })(new Date());
 </script>
 <script>
 // Cấu hình dự án Firebase của bạn (lấy ở Firebase console → Project settings → Your apps → Web app).
@@ -515,6 +533,7 @@ window.WT_FIREBASE = {
 const STORAGE_KEY = 'wt_entries_v1';
 const GOAL_KEY = 'wt_goal_v1';
 const HEIGHT_KEY = 'wt_height_v1';
+const DEADLINE_KEY = 'wt_deadline_v1'; // hạn chót đạt mục tiêu 'YYYY-MM-DD'
 const VIEW_KEY = 'wt_view_v1';
 
 function loadEntries() {
@@ -565,6 +584,14 @@ function saveHeight(v) {
   if (v === null || v === '' || isNaN(v)) localStorage.removeItem(HEIGHT_KEY);
   else localStorage.setItem(HEIGHT_KEY, String(v));
 }
+function loadDeadline() {
+  const v = localStorage.getItem(DEADLINE_KEY);
+  return v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+}
+function saveDeadline(v) {
+  if (!v) localStorage.removeItem(DEADLINE_KEY);
+  else localStorage.setItem(DEADLINE_KEY, v);
+}
 // persisted pan/zoom so the chart reopens exactly where it was left, instead of resetting every launch
 function loadViewState() {
   try {
@@ -586,10 +613,12 @@ function saveViewState() {
 // optional demo/preview seed (only used by the standalone preview build; harmless no-op otherwise)
 if (loadEntries().length === 0 && window.__WT_SEED_ENTRIES__) saveEntries(window.__WT_SEED_ENTRIES__);
 if (loadGoal() === null && window.__WT_SEED_GOAL__ != null) saveGoal(window.__WT_SEED_GOAL__);
+if (loadDeadline() === null && window.__WT_SEED_DEADLINE__) saveDeadline(window.__WT_SEED_DEADLINE__);
 
 let entries = loadEntries(); // {id, date:'YYYY-MM-DD', weight:Number, note:String}
 let goalWeight = loadGoal();
 let heightCm = loadHeight();
+let goalDeadline = loadDeadline();
 
 function sortedEntries() {
   return [...entries].sort((a, b) => a.date.localeCompare(b.date));
@@ -669,6 +698,19 @@ function computeTrend(list) {
   const lastIso = sorted[sorted.length-1].date;
   const lastWeight = sorted[sorted.length-1].weight;
   return { slopePerDay: slope, lastIso, lastWeight };
+}
+
+// Kế hoạch: đi từ lần cân mới nhất tới (hạn chót, mục tiêu) với tốc độ đều
+function computePlan(list) {
+  if (!goalWeight || !goalDeadline || !list.length) return null;
+  const last = list[list.length - 1];
+  const startT = toDate(last.date).getTime(), endT = toDate(goalDeadline).getTime();
+  const days = daysBetween(startT, endT);
+  if (days < 1) return null; // hạn đã qua (hoặc là hôm nay) → không vẽ
+  return { startT, startW: last.weight, endT, endW: goalWeight, perWeek: (goalWeight - last.weight) / days * 7, days };
+}
+function fmtPace(perWeek) {
+  return `${perWeek > 0.005 ? '+' : perWeek < -0.005 ? '−' : ''}${Math.abs(perWeek).toFixed(1).replace('.', ',')} kg/tuần`;
 }
 
 // ===================================================================
@@ -778,7 +820,7 @@ function visibleEntries() {
 const REDUCED_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const NUM_FONT = '"Barlow Condensed","Roboto Condensed","Arial Narrow",sans-serif';
 const C = { grid: '#212c3b', axis: '#72859a', line: '#3cc4b2', wash: '60,196,178', mon: '#e6483f', label: '#a7b4c1',
-            labelLast: '#e9edf1', goal: '#4fd6c4', trend: '#72859a', surface: '#121a26' };
+            labelLast: '#e9edf1', goal: '#4fd6c4', trend: '#72859a', surface: '#121a26', plan: '#e6483f' };
 
 // bước chia trục "đẹp" (0,1 · 0,2 · 0,25 · 0,5 · 1 · 2 · 5 ...)
 function niceStep(span, target) {
@@ -934,8 +976,11 @@ function drawChart() {
     ctx.restore();
     ctx.fillStyle = C.axis;
     ctx.font = `500 13px ${NUM_FONT}`;
-    ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
-    ctx.fillText(`mục tiêu ${goalWeight.toFixed(1).replace('.', ',')}`, W - PAD.r - 4, py - 6);
+    ctx.textBaseline = 'alphabetic';
+    // có hạn chót → đầu đường kế hoạch nằm trên vạch này ở bên phải, nên ghi nhãn sang trái
+    const left = !!computePlan(list);
+    ctx.textAlign = left ? 'left' : 'right';
+    ctx.fillText(`mục tiêu ${goalWeight.toFixed(1).replace('.', ',')}`, left ? PAD.l + 6 : W - PAD.r - 4, py - 6);
   }
 
   // ---- area wash + solid line through actual points ----
@@ -975,6 +1020,32 @@ function drawChart() {
     const lx = Math.min(Math.max(endPx, PAD.l + 70), W - PAD.r - 4);
     ctx.textAlign = 'right';
     ctx.fillText(label, lx, Math.min(Math.max(endPy, PAD.t + 14), H - PAD.b - 4) - 10);
+  }
+
+  // ---- đường kế hoạch (đỏ, chấm đứt): từ lần cân mới nhất tới mục tiêu vào ngày hạn chót ----
+  const plan = computePlan(list);
+  if (plan) {
+    const sx = xToPx(plan.startT), sy = yToPx(plan.startW), ex = xToPx(plan.endT), ey = yToPx(plan.endW);
+    ctx.save();
+    ctx.setLineDash([7, 5]);
+    ctx.strokeStyle = C.plan; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+    ctx.setLineDash([]);
+    // mốc hạn chót: vòng đỏ + cờ nhỏ
+    ctx.beginPath(); ctx.arc(ex, ey, 5, 0, Math.PI * 2);
+    ctx.fillStyle = C.surface; ctx.fill(); ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.restore();
+    // nhãn tốc độ cần đạt, đặt dưới đầu đường (đường dự đoán xám ghi nhãn phía trên → không đè)
+    const d = toDate(goalDeadline);
+    const label = `${fmtPace(plan.perWeek)} · ${d.getDate()}/${d.getMonth() + 1}`;
+    ctx.font = `600 13px ${NUM_FONT}`;
+    ctx.textBaseline = 'top';
+    ctx.textAlign = 'right';
+    const lw = ctx.measureText(label).width;
+    const lx = Math.min(Math.max(ex + lw / 2, PAD.l + lw + 4), W - PAD.r - 4);
+    const ly = Math.min(Math.max((ex > W - PAD.r ? sy + (ey - sy) * ((W - PAD.r - sx) / (ex - sx)) : ey) + 10, PAD.t), H - PAD.b - 18);
+    ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = C.surface; ctx.strokeText(label, lx, ly);
+    ctx.fillStyle = C.plan; ctx.fillText(label, lx, ly);
   }
 
   // ---- points: viền màu nền để chấm tách khỏi đường; ẩn khi quá dày (zoom xa) ----
@@ -1198,12 +1269,14 @@ journalRows.addEventListener('click', (ev) => {
 
 function refreshSideUI() {
   const list = sortedEntries();
-  const sig = JSON.stringify([entries.length, list.length && list[list.length-1], goalWeight, heightCm, list.reduce((a, e) => a + e.weight + (e.note || '').length, 0)]);
+  const sig = JSON.stringify([entries.length, list.length && list[list.length-1], goalWeight, goalDeadline, heightCm, list.reduce((a, e) => a + e.weight + (e.note || '').length, 0)]);
   if (sig === sideSig) return;
   sideSig = sig;
   renderJournal(list);
   const goalLine = document.getElementById('goalLine'), bmiLine = document.getElementById('bmiLine'), weekLine = document.getElementById('weekLine');
-  goalLine.innerHTML = goalWeight ? `<i></i>Mục tiêu ${fmtKg(goalWeight)}` : '';
+  const dl = goalDeadline ? toDate(goalDeadline) : null;
+  goalLine.innerHTML = goalWeight ? `<i></i>Mục tiêu ${fmtKg(goalWeight)}${dl ? ` · ${dl.getDate()}/${dl.getMonth() + 1}` : ''}` : '';
+  refreshPlanNote(list);
   if (!list.length) { tapeTag.innerHTML = '--<small>kg</small>'; bmiLine.textContent = ''; weekLine.textContent = ''; return; }
   const last = list[list.length - 1], lastT = toDate(last.date).getTime();
   tapeTagHome = `${fmtKg(last.weight)}<small>kg</small>`;
@@ -1531,8 +1604,11 @@ function setRange(days, animate) {
   const DAY = 86400000;
   const lastT = toDate(list[list.length-1].date).getTime(), firstT = toDate(list[0].date).getTime();
   const xMin = days ? lastT - days * DAY : firstT - 2 * DAY;
-  const xMax = lastT + (days ? Math.min(30, Math.max(1, days / 7)) : 14) * DAY;
+  let xMax = lastT + (days ? Math.min(30, Math.max(1, days / 7)) : 14) * DAY;
+  const plan = days ? null : computePlan(list); // "Tất cả": thấy trọn đường kế hoạch tới hạn chót
+  if (plan) xMax = Math.max(xMax, plan.endT + Math.max(7, (plan.endT - firstT) / DAY * 0.1) * DAY);
   const ws = list.filter(e => { const t = toDate(e.date).getTime(); return t >= xMin && t <= xMax; }).map(e => e.weight);
+  if (plan) ws.push(plan.endW);
   let lo = Math.min(...ws), hi = Math.max(...ws);
   const pad = Math.max(0.4, (hi - lo) * 0.15);
   const target = { xMin, xMax, yMin: lo - pad, yMax: hi + pad + 0.2 };
@@ -1589,6 +1665,39 @@ goalInput.addEventListener('change', () => {
   touchSettings();
   drawChart();
 });
+const deadlineInput = document.getElementById('deadlineInput');
+const deadlineClear = document.getElementById('deadlineClear');
+deadlineInput.value = goalDeadline || '';
+deadlineClear.hidden = !goalDeadline;
+deadlineInput.addEventListener('change', () => {
+  goalDeadline = /^\d{4}-\d{2}-\d{2}$/.test(deadlineInput.value) ? deadlineInput.value : null;
+  saveDeadline(goalDeadline);
+  deadlineClear.hidden = !goalDeadline;
+  touchSettings();
+  drawChart();
+});
+deadlineClear.addEventListener('click', () => {
+  deadlineInput.value = '';
+  deadlineInput.dispatchEvent(new Event('change'));
+});
+// dòng giải thích dưới ô hạn chót: cần giảm/tăng bao nhiêu mỗi tuần
+function refreshPlanNote(list) {
+  const planNote = document.getElementById('planNote'), clearBtn = document.getElementById('deadlineClear');
+  if (!planNote) return;
+  clearBtn.hidden = !goalDeadline;
+  if (!goalDeadline) { planNote.textContent = 'Chọn ngày để hiện đường kế hoạch màu đỏ trên biểu đồ.'; planNote.className = 'sub'; return; }
+  if (!goalWeight) { planNote.textContent = 'Nhập mục tiêu cân nặng ở trên để tính tốc độ.'; planNote.className = 'sub'; return; }
+  if (!list.length) { planNote.textContent = 'Chưa có lần cân nào để tính.'; planNote.className = 'sub'; return; }
+  const plan = computePlan(list);
+  if (!plan) { planNote.textContent = 'Ngày này đã qua, hãy chọn ngày mới.'; planNote.className = 'sub warn'; return; }
+  const diff = plan.endW - plan.startW, weeks = plan.days / 7;
+  const verb = diff < 0 ? 'giảm' : 'tăng';
+  planNote.className = 'sub plan';
+  planNote.textContent = Math.abs(diff) < 0.05
+    ? 'Bạn đang ở đúng mục tiêu, chỉ cần giữ cân.'
+    : `Cần ${verb} ${fmtKg(Math.abs(diff))} kg trong ${weeks >= 2 ? Math.round(weeks) + ' tuần' : Math.round(plan.days) + ' ngày'} → ${fmtPace(plan.perWeek)}`
+      + (Math.abs(plan.perWeek) > 1 ? ' (khá gắt, nên ≤ 1 kg/tuần)' : '');
+}
 heightInput.addEventListener('change', () => {
   heightCm = heightInput.value === '' ? null : parseFloat(heightInput.value);
   saveHeight(heightCm);
@@ -2091,7 +2200,7 @@ checkForUpdate(false);
 // Dữ liệu vẫn nằm trên máy là chính: mất mạng app chạy bình thường, có mạng thì tự đồng bộ.
 // Mỗi lần cân là 1 tài liệu users/{uid}/entries/{YYYY-MM-DD} {weight, note, updatedAt, deleted}.
 // Gộp dữ liệu: cùng 1 ngày, bản có updatedAt mới hơn thắng (kể cả bản "đã xoá").
-// Mục tiêu + chiều cao ở tài liệu users/{uid} {goal, height, settingsUpdatedAt}.
+// Mục tiêu + hạn chót + chiều cao ở tài liệu users/{uid} {goal, deadline, height, settingsUpdatedAt}.
 // Created by Mondiro
 // ===================================================================
 (function () {
@@ -2261,18 +2370,22 @@ checkForUpdate(false);
       if (rts > lts) {
         goalWeight = sf.goal && sf.goal.nullValue === undefined ? num(sf.goal) || null : null;
         heightCm = sf.height && sf.height.nullValue === undefined ? num(sf.height) || null : null;
-        saveGoal(goalWeight); saveHeight(heightCm);
+        goalDeadline = sf.deadline && typeof sf.deadline.stringValue === 'string' && sf.deadline.stringValue ? sf.deadline.stringValue : null;
+        saveGoal(goalWeight); saveHeight(heightCm); saveDeadline(goalDeadline);
         lsSet(SETTINGS_TS_KEY, String(rts));
         const gi = $('goalInput'), hi = $('heightInput');
         if (gi) gi.value = goalWeight !== null ? goalWeight : '';
         if (hi) hi.value = heightCm !== null ? heightCm : '';
+        const di = $('deadlineInput');
+        if (di) di.value = goalDeadline || '';
         settingsChanged = true;
       } else if (lts > rts) {
-        await fsFetch(`${FS_BASE}/users/${auth.uid}?updateMask.fieldPaths=goal&updateMask.fieldPaths=height&updateMask.fieldPaths=settingsUpdatedAt`, {
+        await fsFetch(`${FS_BASE}/users/${auth.uid}?updateMask.fieldPaths=goal&updateMask.fieldPaths=height&updateMask.fieldPaths=deadline&updateMask.fieldPaths=settingsUpdatedAt`, {
           method: 'PATCH',
           body: JSON.stringify({ fields: {
             goal: goalWeight === null ? { nullValue: null } : { doubleValue: goalWeight },
             height: heightCm === null ? { nullValue: null } : { doubleValue: heightCm },
+            deadline: goalDeadline ? { stringValue: goalDeadline } : { nullValue: null },
             settingsUpdatedAt: { integerValue: String(lts) },
           } }),
         });
