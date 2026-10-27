@@ -25,7 +25,9 @@ Capacitor (web app đóng gói native) — cùng cách làm với app "Money Tra
 - **Nhật ký**: danh sách các lần cân kèm ghi chú và mức tăng/giảm; chạm 1 dòng để sửa. Bấm tiêu đề "Nhật ký" để
   thu/mở (có hiệu ứng); màn hình ngoài mặc định thu gọn, màn hình trong là cột bên phải.
 - Nút **+** đỏ to ở giữa để nhập cân nặng (bánh xe kg,g + ngày + ghi chú) — cùng bảng nhập với nút sửa.
-- Cài đặt: mục tiêu, chiều cao, xuất/nhập CSV, kiểm tra bản mới, xoá dữ liệu.
+- **Hạn chót đạt mục tiêu**: chọn ngày trong Cài đặt → biểu đồ có **đường đỏ chấm đứt** từ lần cân mới nhất tới mục tiêu
+  vào ngày đó, kèm tốc độ cần đạt (vd "−0,4 kg/tuần · 5/1"); Cài đặt ghi rõ cần giảm bao nhiêu kg trong bao nhiêu tuần.
+- Cài đặt: mục tiêu, hạn chót, chiều cao, xuất/nhập CSV, kiểm tra bản mới, xoá dữ liệu.
 - Tự cập nhật qua GitHub Releases (xem mục bên dưới). Font Barlow Condensed + Be Vietnam Pro đóng gói sẵn, chạy offline.
 - Chữ "Created by Mondiro" ở góc dưới màn hình.
 
