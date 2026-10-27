@@ -674,16 +674,16 @@ let tapeDrag = null;
 const needleSim = { ang: 0, vel: 0, lastX: null, raf: null, calm: 0 };
 // Thông số kim + nấc — chỉnh thử được trong Cài đặt → "Chỉnh thông số kim" (lưu trên máy)
 const TUNE_KEY = 'wt_needle_tune_v1';
-const TUNE_DEFAULTS = {
-  notchPull: 1.25,    // độ cứng nấc: lực hút của mỗi vạch (lớn hơn độ bám tay → kẹt rồi bật)
-  dragSpring: 0.24,   // độ bám tay: lò xo nối ngón tay → thước
-  dragDamp: 0.62,     // giảm chấn thước: nhỏ = bật sang nấc gọn, lớn = trượt lâu
-  pivot: 520,         // tâm xoay của kim cách mép trên thước bao nhiêu px
-  needleGain: 0.12,   // độ nhạy: thước chạy nhanh thì kim lệch bao nhiêu
-  needleMax: 2.6,     // góc lệch tối đa (độ)
-  needleSpring: 0.11, // lò xo kéo kim về giữa
-  needleDamp: 0.85,   // giảm chấn kim: lớn = lắc lâu
-  vibrate: 4,         // rung mỗi nấc (ms), 0 = tắt
+const TUNE_DEFAULTS = { // Mondiro chốt sau khi thử trên máy
+  notchPull: 2.55,    // độ cứng nấc: lực hút của mỗi vạch (lớn hơn độ bám tay → kẹt rồi bật)
+  dragSpring: 0.6,    // độ bám tay: lò xo nối ngón tay → thước
+  dragDamp: 0.79,     // giảm chấn thước: nhỏ = bật sang nấc gọn, lớn = trượt lâu
+  pivot: 1180,        // tâm xoay của kim cách mép trên thước bao nhiêu px
+  needleGain: 0.185,  // độ nhạy: thước chạy nhanh thì kim lệch bao nhiêu
+  needleMax: 3.2,     // góc lệch tối đa (độ)
+  needleSpring: 0.09, // lò xo kéo kim về giữa
+  needleDamp: 0.93,   // giảm chấn kim: lớn = lắc lâu
+  vibrate: 23,        // rung mỗi nấc (ms), 0 = tắt
 };
 let TUNE = { ...TUNE_DEFAULTS };
 try { Object.assign(TUNE, JSON.parse(localStorage.getItem(TUNE_KEY) || '{}')); } catch (e) { /* ignore */ }
